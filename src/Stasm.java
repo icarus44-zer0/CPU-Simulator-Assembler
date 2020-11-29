@@ -5,7 +5,7 @@ import java.util.*;
  *
  */
 public class Stasm {
-    private static ArrayList<String> inputFileRaw;
+    private static ArrayList<String> fistScanList;
     private static ArrayList<String> inputFileOpcodes;
     private static ArrayList<String> inputFileValues;
     private static ArrayList<String> inputFileValues_Hex;
@@ -18,7 +18,7 @@ public class Stasm {
      * @param args
      */
     public static void main(String[] args) {
-        inputFileRaw = new ArrayList<String>();
+        fistScanList = new ArrayList<String>();
         inputFileOpcodes = new ArrayList<String>();
         inputFileValues = new ArrayList<String>();
         inputFileValues_Hex = new ArrayList<String>();
@@ -26,13 +26,13 @@ public class Stasm {
         inputFileMap = new HashMap<String, String>();
 
 
-        makeOpcodeMap();
-        readInputFile(inputFileRaw);
+        makeOpcodeMap(opcodeMap);
+        firstScan(fistScanList);
+        secondScan(inputFileOpcodes,inputFileValues);
         convertInputValuesToHex(inputFileValues, inputFileValues_Hex);
         makeInputMap(inputFileOpcodes, inputFileValues_Hex);
         compareMapsAndReplaceValues(opcodeMap, inputFileMap);
         writeToObjectFile(inputFileMap);
-
         printMap(inputFileMap);
 
     }
@@ -50,20 +50,48 @@ public class Stasm {
 
     /**
      *
+     * @param inputFileRaw
      */
-    private static void readInputFile() {
+    private static void firstScan(ArrayList<String> inputArrayList) {
+        try {
+            File myObj = new File("input.txt");
+            Scanner sc = new Scanner(myObj);
+            while (sc.hasNextLine()) {
+                String label = "";
+                String mnemonic = "";
+                String operand = "";
+                String comment = "";
+
+                String scanner = sc.next();
+                if (scanner.matches(":"){
+                    String value = sc.next();
+                    inputArrayList.add(value);
+             }
+            }
+            sc.close();
+         } catch (FileNotFoundException e) {
+            e.printStackTrace();
+        }
+
+
+        /**
+     *
+     * @param inputFileOpcodes
+     * @param inputArrayList
+     */
+    private static void secondScan(ArrayList<String> inputFileOpcodes, ArrayList<String> inputArrayList) {
         try {
             File myObj = new File("input.txt");
             Scanner sc = new Scanner(myObj);
             sc.nextLine();
             while (sc.hasNextLine()) {
                 String opCode = sc.next();
-                inputFileOpcodes.add(opCode);
+                inputArrayList.add(opCode);
                 if (sc.hasNextInt()){
                     String value = sc.next();
-                    inputFileValues.add(value);
+                    inputArrayList.add(value);
                 } else {
-                    inputFileValues.add("00");
+                    inputArrayList.add("00");
                 }
 
             }
@@ -72,6 +100,9 @@ public class Stasm {
             e.printStackTrace();
         }
     }
+
+
+
 
     /**
      *
@@ -127,8 +158,9 @@ public class Stasm {
 
     /**
      *
+     * @param opcodeMap
      */
-    private static void makeOpcodeMap() {
+    private static void makeOpcodeMap(HashMap<String, String> opcodeMap) {
         opcodeMap.put("NOP", "0000");
         opcodeMap.put("HALT", "0F00");
         opcodeMap.put("PUSHPC", "0100");
@@ -210,6 +242,52 @@ public class Stasm {
         for (Map.Entry<String, String> entry : map.entrySet())
             System.out.println(entry.getKey() +
                     " : " + entry.getValue());
+    }
+}
+
+class CPU_Instruction {
+    private String label;
+    private String mnemonic;
+    private String operand;
+    private String comment;
+
+    public CPU_Instruction(String label, String mnemonic, String operand, String comment){
+        this.label = label;
+        this.mnemonic = mnemonic;
+        this.operand = operand;
+        this.comment = comment;
+    }
+
+    public String getLabel() {
+        return label;
+    }
+
+    public void setLabel(String label) {
+        this.label = label;
+    }
+
+    public String getMnemonic() {
+        return mnemonic;
+    }
+
+    public void setMnemonic(String mnemonic) {
+        this.mnemonic = mnemonic;
+    }
+
+    public String getOperand() {
+        return operand;
+    }
+
+    public void setOperand(String operand) {
+        this.operand = operand;
+    }
+
+    public String getComment() {
+        return comment;
+    }
+
+    public void setComment(String comment) {
+        this.comment = comment;
     }
 }
 
