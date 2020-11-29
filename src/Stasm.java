@@ -5,6 +5,7 @@ import java.util.*;
  *
  */
 public class Stasm {
+    private static ArrayList<String> inputFileRaw;
     private static ArrayList<String> inputFileOpcodes;
     private static ArrayList<String> inputFileValues;
     private static ArrayList<String> inputFileValues_Hex;
@@ -17,14 +18,16 @@ public class Stasm {
      * @param args
      */
     public static void main(String[] args) {
+        inputFileRaw = new ArrayList<String>();
         inputFileOpcodes = new ArrayList<String>();
         inputFileValues = new ArrayList<String>();
         inputFileValues_Hex = new ArrayList<String>();
         opcodeMap = new HashMap<String, String>();
         inputFileMap = new HashMap<String, String>();
 
+
         makeOpcodeMap();
-        readInputFile();
+        readInputFile(inputFileRaw);
         convertInputValuesToHex(inputFileValues, inputFileValues_Hex);
         makeInputMap(inputFileOpcodes, inputFileValues_Hex);
         compareMapsAndReplaceValues(opcodeMap, inputFileMap);
