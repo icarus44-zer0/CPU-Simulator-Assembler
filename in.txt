@@ -1,40 +1,42 @@
+F: DW 0
 NOP 000
-a: HALT 000 ;Comments Go Here
-b: PUSHPC 12 ;Comments Go Here
-c: POPPC 12 ;Comments Go Here
-d: LD  30 ;Comments Go Here
-e: ST 30 ;Comments Go Here
+HALT 000 ;Comments Go Here
+PUSHPC 12 ;Comments Go Here
+POPPC 12 ;Comments Go Here
+LD  30 ;Comments Go Here
+ST 30 ;Comments Go Here
 DUP 50 ;Comments Go Here
-f: DROP 202 ;Comments Go Here
-k: OVER 2020 ;Comments Go Here
-k: DNEXT 202 ;Comments Go Here
+DROP K ;Comments Go Here
+OVER 2020 ;Comments Go Here
+DNEXT 202 ;Comments Go Here
 SWAP ;Comments Go Here
-k: PUSHI 4095 ;Comments Go Here
-k: PUSHA 33 ;Comments Go Here
-POPA 33 ;Comments Go Here
-k: JMPA 33 ;Comments Go Here
-k: JZA 33 ;Comments Go Here
-k: JNZA 33 ;Comments Go Here
-k: IN  44 ;Comments Go Here
+PUSHI 4095 ;Comments Go Here
+PUSHA 33 ;Comments Go Here
+JMPA A ;Comments Go Here
+JZA 33 ;Comments Go Here
+JNZA 33 ;Comments Go Here
+IN  A ;Comments Go Here
 OUT 44 ;Comments Go Here
-k: ADD ;Comments Go Here
-k: SUB ;Comments Go Here
-k: MUL ;Comments Go Here
+ADD ;Comments Go Here
+SUB ;Comments Go Here
+MUL ;Comments Go Here
 DIV ;Comments Go Here
-k: MOD ;Comments Go Here
-k: SHL ;Comments Go Here
-k: SHR ;Comments Go Here
-k: BAND ;Comments Go Here
-k: BOR ;Comments Go Here
-k: BXOR ;Comments Go Here
-k: AND ;Comments Go Here
-k: OR ;Comments Go Here
-k: EQ ;Comments Go Here
+MOD ;Comments Go Here
+SHL ;Comments Go Here
+SHR ;Comments Go Here
+BAND ;Comments Go Here
+BOR ;Comments Go Here
+BXOR ;Comments Go Here
+AND ;Comments Go Here
+OR ;Comments Go Here
+EQ ;Comments Go Here
 NE ;Comments Go Here
-k: GE ;Comments Go Here
-k: LE ;Comments Go Here
-k: GT ;Comments Go Here
+GE ;Comments Go Here
+LE ;Comments Go Here
+GT ;Comments Go Here
 LT ;Comments Go Here
-k: NEG ;Comments Go Here
-k: BNOT ;Comments Go Here
-k: NOT ;Comments Go Here
+NEG ;Comments Go Here
+BNOT ;Comments Go Here
+NOT ;Comments Go Here
+K: DW 0
+A: DW 0
