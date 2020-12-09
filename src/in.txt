@@ -40,3 +40,9 @@ BNOT ;Comments Go Here
 NOT ;Comments Go Here
 K: DW 0
 A: DW 0
+NEG ;Comments Go Here
+BNOT ;Comments Go Here
+NOT ;Comments Go Here
+HALT 000 ;Comments Go Here
+PUSHPC 12 ;Comments Go Here
+POPPC 12 ;Comments Go Here
