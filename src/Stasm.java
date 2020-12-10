@@ -4,121 +4,101 @@ import java.util.*;
 /**
  *
  */
+@SuppressWarnings("all")
 public class Stasm {
-    private static ArrayList<CPU_Instruction> fistScanList;
-    private static ArrayList<CPU_Opcode> secondScanList;
-    private static ArrayList<String> inputFileOpcodes;
-    private static ArrayList<String> inputFileValues;
-    private static ArrayList<String> inputFileValues_Hex;
-    private static ArrayList<String> outputFileList;
-    private static HashMap<String, String> opcodeMap;
-    private static HashMap<String, String> labelAddressMap;
+    private static ArrayList<CPU_Instruction> instructionArrayList;
+    private static ArrayList<CPU_Opcode> opcodeArrayList;
+    private static ArrayList<String> mnemonicArrayList;
+    private static ArrayList<String> operandArrayList;
+    private static ArrayList<String> operandArrayList_Hex;
+    private static ArrayList<String> outputList;
+    private static HashMap<String, String> opcodeHashMap;
+    private static HashMap<String, String> labelValueHashMap;
+    private static String fileName;
+    private static boolean isPrintToConsole;
 
     /**
      * @param args
      */
     public static void main(String[] args) {
-        fistScanList = new ArrayList<CPU_Instruction>();
-        secondScanList = new ArrayList<CPU_Opcode>();
-        inputFileOpcodes = new ArrayList<String>();
-        inputFileValues = new ArrayList<String>();
-        inputFileValues_Hex = new ArrayList<String>();
-        outputFileList = new ArrayList<String>();
-        opcodeMap = new HashMap<String, String>();
-        labelAddressMap = new HashMap<String, String>();
+
+        instructionArrayList = new ArrayList<CPU_Instruction>();
+        opcodeArrayList = new ArrayList<CPU_Opcode>();
+        mnemonicArrayList = new ArrayList<String>();
+        operandArrayList = new ArrayList<String>();
+        operandArrayList_Hex = new ArrayList<String>();
+        outputList = new ArrayList<String>();
+
+        opcodeHashMap = new HashMap<String, String>();
+        labelValueHashMap = new HashMap<String, String>();
+
+        fileName = "";
+        isPrintToConsole = false;
+        // parse arguments from th
+        parseArgs(args);
 
         // Creates HashMap of valid opCodes and their respective Machine Code
-        makeOpcodeMap(opcodeMap);
+        initOpcodeHashMap(opcodeHashMap);
 
         // Scans input files and parses data into an Array list fistScanList, of custom
         // Object type CPU_Instruction
-        firstScan(fistScanList);
-
-//        System.out.println(fistScanList);
-//        System.exit(42);
+        initInstructionArrayList(instructionArrayList,opcodeHashMap);
 
         // Builds HashMap of Variables listed in input file and assigns value as their
         // address
-        addAddressValuesToMap(fistScanList, labelAddressMap);
+        initLabelValueHashMap(instructionArrayList, labelValueHashMap);
 
         // Swaps all variable operands in fistScanList in with their value from
-        // labelAddressMap
-        SwapLabelsWithAddressValues(fistScanList, labelAddressMap);
+        replaceListLabelsWithLabelValues(instructionArrayList, labelValueHashMap);
 
         // Builds ArrayList of just Mnemonic and operand
-        secondScan(fistScanList, inputFileOpcodes, inputFileValues);
+        initOperandArrayList(instructionArrayList, mnemonicArrayList, operandArrayList);
 
         // Converts Integers to Hex
-        convertInputValuesToHex(inputFileValues, inputFileValues_Hex);
+        operandArrayListToHex(operandArrayList, operandArrayList_Hex);
 
         // Creates LinkedHashMap with the Mnemonic and Hex Value
-        init_SecondScanList(secondScanList, inputFileOpcodes, inputFileValues_Hex);
+        initOpcodeArrayList(opcodeArrayList, mnemonicArrayList, operandArrayList_Hex);
 
         // Swaps LinkedHashMap Mnemonic opcodes with Machine Language opcode "i.e ADD ->
         // F000"
-        compareMapsAndReplaceValues(opcodeMap, secondScanList, outputFileList);
+        replaceMnemonicsWithOpcodes(opcodeHashMap, opcodeArrayList, outputList);
 
         // Writes LinkedHashMap out to a objectfile.txt
-        //writeToObjectFile(outputFileList);
+        writeToObjectFile(outputList);
 
         // Prints LinkedHashMap to the screen. Determined by user args input -l
-        printMap(outputFileList);
+        if (isPrintToConsole){printMap(outputList);}
     }
 
-    /**
-     *
-     * @param fistScanList
-     * @param labelAddressMap
-     */
-    private static void SwapLabelsWithAddressValues(ArrayList<CPU_Instruction> fistScanList,
-            HashMap<String, String> labelAddressMap) {
-        for (CPU_Instruction instruction : fistScanList) {
-            String op = instruction.getOperand();
-            if (isStringOnlyAlphabet(op)) {
-                instruction.setOperand(labelAddressMap.get(op));
-            }
-        }
-    }
-
-    /**
-     *
-     * @param str
-     * @return
-     */
-    public static boolean isStringOnlyAlphabet(String str) {
-        return ((str != null) && (str.matches("^[a-zA-Z]*$")));
-    }
-
-    /**
-     *
-     * @param fistScanList
-     * @param labelAddressMap
-     */
-    private static void addAddressValuesToMap(ArrayList<CPU_Instruction> fistScanList,
-            HashMap<String, String> labelAddressMap) {
-        for (CPU_Instruction instruction : fistScanList) {
-            if (instruction.getLabel() != null) {
-                labelAddressMap.put(instruction.getLabel(), String.valueOf(fistScanList.indexOf(instruction)));
-            }
-        }
-    }
-
-    /**
-     * @param target
-     * @param dest
-     */
-    private static void convertInputValuesToHex(ArrayList<String> target, ArrayList<String> dest) {
-        for (String temp : target) {
-            dest.add(DECTOHEX(temp));
-        }
-    }
-
-    /**
-     * @param inputArrayList
-     */
-    private static void firstScan(ArrayList<CPU_Instruction> inputArrayList) {
+    private static void parseArgs(String[] args) {
         try {
-            File myObj = new File("src/" + "in.txt");
+            fileName = args[0];
+        }catch (ArrayIndexOutOfBoundsException e){
+            String errorMessage = """
+                    Your command line prompt> java Stasm.java
+                    USAGE: java Stasm.java <source file> <object file> [-l]
+                    -l : print listing to standard output
+                    """;
+            System.out.println(errorMessage);
+            System.exit(42);
+        }
+
+        try {
+            isPrintToConsole = (args[1].equals("-l") ? true : false);
+        }catch (ArrayIndexOutOfBoundsException e){
+            //nothing
+        }
+    }
+
+    /**
+     * @param instructionArrayList
+     * @param opcodeHashMap
+     * @param fileName
+     */
+    private static void initInstructionArrayList(ArrayList<CPU_Instruction> instructionArrayList, HashMap<String, String> opcodeHashMap) {
+        try {
+            File myObj = new File(fileName);
             Scanner sc = new Scanner(myObj);
             while (sc.hasNextLine()) {
                 String label = null;
@@ -141,13 +121,13 @@ public class Stasm {
 
                     if (next.contains(":")) {
                         label = next.replace(":", "");
-                    } else if (opcodeMap.containsKey(next)) {
+                    } else if (opcodeHashMap.containsKey(next)) {
                         mnemonic = next;
                     } else
                         operand = next;
                 }
                 CPU_Instruction instruction = new CPU_Instruction(label, mnemonic, operand, comment);
-                inputArrayList.add(instruction);
+                instructionArrayList.add(instruction);
             }
             sc.close();
         } catch (FileNotFoundException e) {
@@ -156,52 +136,90 @@ public class Stasm {
     }
 
     /**
-     *
-     * @param fistScanList
-     * @param inputFileOpcodes
-     * @param inputArrayList
+     * @param instructionArrayList
+     * @param labelValueHashMap
      */
-    private static void secondScan(ArrayList<CPU_Instruction> fistScanList, ArrayList<String> inputFileOpcodes,
-            ArrayList<String> inputArrayList) {
-        for (int i = 0; i < fistScanList.size(); i++) {
-            CPU_Instruction instruction = fistScanList.get(i);
-            String mnemonic = instruction.getMnemonic();
-            String operand = instruction.getOperand();
-
-            inputFileOpcodes.add(mnemonic);
-
-            if (operand == null) {
-                operand = "";
+    private static void initLabelValueHashMap(ArrayList<CPU_Instruction> instructionArrayList, HashMap<String, String> labelValueHashMap) {
+        for (CPU_Instruction instruction : instructionArrayList) {
+            if (instruction.getLabel() != null) {
+                labelValueHashMap.put(instruction.getLabel(), String.valueOf(instructionArrayList.indexOf(instruction)));
             }
-            inputArrayList.add(operand);
         }
     }
 
     /**
-     * @param operand
-     * @param mnemonic
-     * @param secondScanlist
+     * @param fistScanList
+     * @param labelAddressMap
      */
-    private static void init_SecondScanList(ArrayList<CPU_Opcode> secondScanlist, ArrayList<String> mnemonic, ArrayList<String> operand) {
+    private static void replaceListLabelsWithLabelValues(ArrayList<CPU_Instruction> fistScanList,
+                                                         HashMap<String, String> labelAddressMap) {
+        for (CPU_Instruction instruction : fistScanList) {
+            String op = instruction.getOperand();
+            if (isStringOnlyAlphabet(op)) {
+                instruction.setOperand(labelAddressMap.get(op));
+            }
+        }
+    }
 
-        for (int i = 0; i < mnemonic.size(); i++)
-            if (!(mnemonic.get(i).equals("DW"))) {
-                CPU_Opcode code = new CPU_Opcode(mnemonic.get(i),operand.get(i));
-                secondScanlist.add(code);
+    /**
+     * @param instructionArrayList
+     * @param mnemonicArrayList
+     * @param operandArrayList
+     */
+    private static void initOperandArrayList(ArrayList<CPU_Instruction> instructionArrayList, ArrayList<String> mnemonicArrayList,
+                                             ArrayList<String> operandArrayList) {
+
+        for (int i = 0; i < instructionArrayList.size(); i++) {
+            CPU_Instruction instruction = instructionArrayList.get(i);
+
+            String mnemonic = instruction.getMnemonic();
+            String operand = instruction.getOperand();
+
+            mnemonicArrayList.add(mnemonic);
+
+            if (operand == null) {
+                operand = "";
+            }
+            operandArrayList.add(operand);
+        }
+    }
+
+
+    /**
+     * @param operandArrayList
+     * @param operandArrayList_Hex
+     */
+    private static void operandArrayListToHex(ArrayList<String> operandArrayList, ArrayList<String> operandArrayList_Hex) {
+        for (String temp : operandArrayList) {
+            operandArrayList_Hex.add(DECTOHEX(temp));
+        }
+    }
+
+    /**
+     * @param opcodeArrayList
+     * @param mnemonicArrayList
+     * @param operandArrayList_Hex
+     */
+    private static void initOpcodeArrayList(ArrayList<CPU_Opcode> opcodeArrayList, ArrayList<String> mnemonicArrayList, ArrayList<String> operandArrayList_Hex) {
+
+        for (int i = 0; i < mnemonicArrayList.size(); i++)
+            if (!(mnemonicArrayList.get(i).equals("DW"))) {
+                CPU_Opcode code = new CPU_Opcode(mnemonicArrayList.get(i),operandArrayList_Hex.get(i));
+                opcodeArrayList.add(code);
             }
     }
 
     /**
-     *
-     * @param secondScanlist
-     * @param CPU_OpCode_Map
-     * @param outputFileList */
-    private static void compareMapsAndReplaceValues(HashMap<String, String> CPU_OpCode_Map, ArrayList<CPU_Opcode> secondScanlist, ArrayList<String> outputFileList) {
+     * @param opcodeHashMap
+     * @param opcodeArrayList
+     * @param outputList
+     */
+    private static void replaceMnemonicsWithOpcodes(HashMap<String, String> opcodeHashMap, ArrayList<CPU_Opcode> opcodeArrayList, ArrayList<String> outputList) {
 
-        for (CPU_Opcode code : secondScanlist) {
+        for (CPU_Opcode code : opcodeArrayList) {
             String key = code.getMnemonic();
             String val = code.getOperand();
-            String val2 = CPU_OpCode_Map.get(key);
+            String val2 = opcodeHashMap.get(key);
 
             // TODO Split up for 1000
             if (val.equals("0") || val2.length() == 4) {
@@ -213,56 +231,84 @@ public class Stasm {
             } else {
                 val = val2 + val;
             }
-            outputFileList.add(val);
+            outputList.add(val);
         }
     }
 
     /**
      *
-     * @param opcodeMap
+     * @param list
      */
-    private static void makeOpcodeMap(HashMap<String, String> opcodeMap) {
-        opcodeMap.put("NOP", "0000");
-        opcodeMap.put("HALT", "0F00");
-        opcodeMap.put("PUSHPC", "0100");
-        opcodeMap.put("POPPC", "0200");
-        opcodeMap.put("LD", "0300");
-        opcodeMap.put("ST", "0400");
-        opcodeMap.put("DUP", "0500");
-        opcodeMap.put("DROP", "0600");
-        opcodeMap.put("OVER", "0700");
-        opcodeMap.put("DNEXT", "0800");
-        opcodeMap.put("SWAP", "0900");
-        opcodeMap.put("PUSHI", "1"); // + I
-        opcodeMap.put("PUSHA", "2"); // + A
-        opcodeMap.put("POPA", "3"); // + A
-        opcodeMap.put("JMPA", "4"); // + A
-        opcodeMap.put("JZA", "5"); // + A
-        opcodeMap.put("JNZA", "6"); // + A
-        opcodeMap.put("IN", "D"); // + P
-        opcodeMap.put("OUT", "E"); // + P
-        opcodeMap.put("ADD", "F000");
-        opcodeMap.put("SUB", "F001");
-        opcodeMap.put("MUL", "F002");
-        opcodeMap.put("DIV", "F003");
-        opcodeMap.put("MOD", "F004");
-        opcodeMap.put("SHL", "F005");
-        opcodeMap.put("SHR", "F006");
-        opcodeMap.put("BAND", "F007");
-        opcodeMap.put("BOR", "F008");
-        opcodeMap.put("BXOR", "F009");
-        opcodeMap.put("AND", "F00A");
-        opcodeMap.put("OR", "F00B");
-        opcodeMap.put("EQ", "F00C");
-        opcodeMap.put("NE", "F00D");
-        opcodeMap.put("GE", "F00E");
-        opcodeMap.put("LE", "F00F");
-        opcodeMap.put("GT", "F010");
-        opcodeMap.put("LT", "F011");
-        opcodeMap.put("NEG", "F012");
-        opcodeMap.put("BNOT", "F013");
-        opcodeMap.put("NOT", "F014");
-        opcodeMap.put("DW", "");
+    private static void writeToObjectFile(ArrayList<String> outputList) {
+
+        try {
+            FileWriter myWriter = new FileWriter("output.txt");
+            myWriter.write("v2.0 raw");
+
+            for (String item : outputList) {
+                myWriter.write("\n" +item);
+            }
+            myWriter.close();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    /**
+     *
+     * @param outputList
+     */
+    private static void printMap(ArrayList<String> outputList) {
+        for (String item : outputList)
+            System.out.println(item);
+    }
+
+    /**
+     *
+     * @param opcodeHashMap
+     */
+    private static void initOpcodeHashMap(HashMap<String, String> opcodeHashMap) {
+        opcodeHashMap.put("NOP", "0000");
+        opcodeHashMap.put("HALT", "0F00");
+        opcodeHashMap.put("PUSHPC", "0100");
+        opcodeHashMap.put("POPPC", "0200");
+        opcodeHashMap.put("LD", "0300");
+        opcodeHashMap.put("ST", "0400");
+        opcodeHashMap.put("DUP", "0500");
+        opcodeHashMap.put("DROP", "0600");
+        opcodeHashMap.put("OVER", "0700");
+        opcodeHashMap.put("DNEXT", "0800");
+        opcodeHashMap.put("SWAP", "0900");
+        opcodeHashMap.put("PUSHI", "1"); // + I
+        opcodeHashMap.put("PUSH", "2"); // + A
+        opcodeHashMap.put("POP", "3"); // + A
+        opcodeHashMap.put("JMP", "4"); // + A
+        opcodeHashMap.put("JZ", "5"); // + A
+        opcodeHashMap.put("JNZ", "6"); // + A
+        opcodeHashMap.put("IN", "D"); // + P
+        opcodeHashMap.put("OUT", "E"); // + P
+        opcodeHashMap.put("ADD", "F000");
+        opcodeHashMap.put("SUB", "F001");
+        opcodeHashMap.put("MUL", "F002");
+        opcodeHashMap.put("DIV", "F003");
+        opcodeHashMap.put("MOD", "F004");
+        opcodeHashMap.put("SHL", "F005");
+        opcodeHashMap.put("SHR", "F006");
+        opcodeHashMap.put("BAND", "F007");
+        opcodeHashMap.put("BOR", "F008");
+        opcodeHashMap.put("BXOR", "F009");
+        opcodeHashMap.put("AND", "F00A");
+        opcodeHashMap.put("OR", "F00B");
+        opcodeHashMap.put("EQ", "F00C");
+        opcodeHashMap.put("NE", "F00D");
+        opcodeHashMap.put("GE", "F00E");
+        opcodeHashMap.put("LE", "F00F");
+        opcodeHashMap.put("GT", "F010");
+        opcodeHashMap.put("LT", "F011");
+        opcodeHashMap.put("NEG", "F012");
+        opcodeHashMap.put("BNOT", "F013");
+        opcodeHashMap.put("NOT", "F014");
+        opcodeHashMap.put("DW", "");
     }
 
     /**
@@ -299,30 +345,12 @@ public class Stasm {
 
     /**
      *
-     * @param list
+     * @param str
+     * @return
      */
-    private static void printMap(ArrayList<String> list) {
-        for (String item : list)
-            System.out.println(item);
-    }
+    public static boolean isStringOnlyAlphabet(String str) {
 
-    /**
-     *
-     * @param list
-     */
-    private static void writeToObjectFile(ArrayList<String> list) {
-
-        try {
-            FileWriter myWriter = new FileWriter("/src"+"objectfile.txt");
-            myWriter.write("v2.0 raw");
-
-            for (String item : list) {
-                myWriter.write("\n" +item);
-            }
-            myWriter.close();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+        return ((str != null) && (str.matches("^[a-zA-Z]*$")));
     }
 }
 

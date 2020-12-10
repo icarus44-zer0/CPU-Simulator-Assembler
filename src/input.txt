@@ -11,10 +11,10 @@ OVER 2020 ;Comments Go Here
 DNEXT 202 ;Comments Go Here
 SWAP ;Comments Go Here
 PUSHI 4095 ;Comments Go Here
-PUSHA 33 ;Comments Go Here
-JMPA A ;Comments Go Here
-JZA 33 ;Comments Go Here
-JNZA 33 ;Comments Go Here
+PUSH 33 ;Comments Go Here
+JMP A ;Comments Go Here
+JZ 33 ;Comments Go Here
+JNZ 33 ;Comments Go Here
 IN  A ;Comments Go Here
 OUT 44 ;Comments Go Here
 ADD ;Comments Go Here
