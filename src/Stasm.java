@@ -35,9 +35,21 @@ public class Stasm {
         isPrintToConsole = false;
         counter = 0;
 
-//        args = new String[2];
-//        args[0] = "src/input.txt";
-//        args[1] = "-l";
+
+        // debug method allows src code to compile without
+        // coomand line arguments being supplied
+        // output file will be sent to outide of the src dir
+        if(true){
+            System.err.println("""
+                    *
+                    * The debug flag for this program has been set to true.
+                    *
+                    """);
+            args = new String[2];
+            args[0] = "src/input.txt";
+            args[1] = "-l";
+        }
+
         // parse arguments from console
         parseArgs(args);
 

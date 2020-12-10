@@ -54,3 +54,4 @@ PUSHI -22 ;Comments Go Here
 PUSHI -44 ;Comments Go Here
 PUSHI -79 ;Comments Go Here
 END:
+HALT
