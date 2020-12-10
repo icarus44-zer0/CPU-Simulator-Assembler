@@ -16,6 +16,7 @@ public class Stasm {
     private static HashMap<String, String> labelValueHashMap;
     private static String fileName;
     private static boolean isPrintToConsole;
+    private static int counter;
 
     /**
      * @param args
@@ -32,7 +33,11 @@ public class Stasm {
         labelValueHashMap = new HashMap<String, String>();
         fileName = "";
         isPrintToConsole = false;
+        counter = 0;
 
+//        args = new String[2];
+//        args[0] = "src/input.txt";
+//        args[1] = "-l";
         // parse arguments from console
         parseArgs(args);
 
@@ -130,6 +135,7 @@ public class Stasm {
                         label = next.replace(":", "");
                     } else if (opcodeHashMap.containsKey(next)) {
                         mnemonic = next;
+                        counter++;
                     } else
                         operand = next;
                 }
@@ -149,8 +155,10 @@ public class Stasm {
      */
     private static void initLabelValueHashMap(ArrayList<Instruction> instructionArrayList, HashMap<String, String> labelValueHashMap) {
         for (Instruction instruction : instructionArrayList) {
-            if (instruction.getLabel() != null) {
-                labelValueHashMap.put(instruction.getLabel(), String.valueOf(instructionArrayList.indexOf(instruction)));
+            if(instruction.getLabel() != null && instruction.getLabel().equalsIgnoreCase("END")){
+                labelValueHashMap.put(instruction.getLabel(), Integer.toString(counter+1));
+            }else if (instruction.getLabel() != null) {
+                labelValueHashMap.put(instruction.getLabel(), instruction.getOperand());
             }
         }
     }
@@ -159,12 +167,12 @@ public class Stasm {
      * @param fistScanList
      * @param labelAddressMap
      */
-    private static void replaceListLabelsWithLabelValues(ArrayList<Instruction> fistScanList,
-                                                         HashMap<String, String> labelAddressMap) {
-        for (Instruction instruction : fistScanList) {
+    private static void replaceListLabelsWithLabelValues(ArrayList<Instruction> instructionArrayList,
+                                                         HashMap<String, String> labelValueHashMap) {
+        for (Instruction instruction : instructionArrayList) {
             String op = instruction.getOperand();
             if (isStringOnlyAlphabet(op)) {
-                instruction.setOperand(labelAddressMap.get(op));
+                instruction.setOperand(labelValueHashMap.get(op));
             }
         }
     }
@@ -208,10 +216,10 @@ public class Stasm {
      * @param mnemonicArrayList
      * @param operandArrayList_Hex
      */
-    private static void initOpcodeArrayList(ArrayList<Opcode> opcodeArrayList, ArrayList<String> mnemonicArrayList, ArrayList<String> operandArrayList_Hex) {
-
+    private static void initOpcodeArrayList(ArrayList<Opcode> opcodeArrayList, ArrayList<String> mnemonicArrayList,
+                                            ArrayList<String> operandArrayList_Hex) {
         for (int i = 0; i < mnemonicArrayList.size(); i++)
-            if (!(mnemonicArrayList.get(i).equals("DW"))) {
+            if (mnemonicArrayList.get(i) != null) {
                 Opcode code = new Opcode(mnemonicArrayList.get(i),operandArrayList_Hex.get(i));
                 opcodeArrayList.add(code);
             }
@@ -229,7 +237,6 @@ public class Stasm {
             String val = code.getOperand();
             String val2 = opcodeHashMap.get(key);
 
-            // TODO Split up for 1000
             if (val.equals("0") || val2.length() == 4) {
                 val = val2;
             } else if (val.length() == 1) {
@@ -339,7 +346,7 @@ public class Stasm {
         opcodeHashMap.put("NEG", "F012");
         opcodeHashMap.put("BNOT", "F013");
         opcodeHashMap.put("NOT", "F014");
-        opcodeHashMap.put("DW", "");
+        //opcodeHashMap.put("DW", "");
     }
 
     /**

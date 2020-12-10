@@ -21,6 +21,7 @@ ADD ;Comments Go Here
 SUB ;Comments Go Here
 MUL ;Comments Go Here
 DIV ;Comments Go Here
+JMP END;Comments Go Here
 MOD ;Comments Go Here
 SHL ;Comments Go Here
 SHR ;Comments Go Here
@@ -38,8 +39,10 @@ LT ;Comments Go Here
 NEG ;Comments Go Here
 BNOT ;Comments Go Here
 NOT ;Comments Go Here
-K: DW 0
-A: DW 0
+K: DW 47
+A: DW 22
+H: DW 33
+J: DW -20
 NEG ;Comments Go Here
 BNOT ;Comments Go Here
 NOT ;Comments Go Here
@@ -50,3 +53,4 @@ PUSHI 22 ;Comments Go Here
 PUSHI -22 ;Comments Go Here
 PUSHI -44 ;Comments Go Here
 PUSHI -79 ;Comments Go Here
+END:
