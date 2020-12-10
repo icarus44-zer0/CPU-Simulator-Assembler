@@ -39,7 +39,7 @@ public class Stasm {
         // debug method allows src code to compile without
         // coomand line arguments being supplied
         // output file will be sent to outide of the src dir
-        if(true){
+        if(false){
             System.err.println("""
                     *
                     * The debug flag for this program has been set to true.
