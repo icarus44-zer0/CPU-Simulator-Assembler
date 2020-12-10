@@ -6,8 +6,8 @@ import java.util.*;
  */
 @SuppressWarnings("all")
 public class Stasm {
-    private static ArrayList<CPU_Instruction> instructionArrayList;
-    private static ArrayList<CPU_Opcode> opcodeArrayList;
+    private static ArrayList<Instruction> instructionArrayList;
+    private static ArrayList<Opcode> opcodeArrayList;
     private static ArrayList<String> mnemonicArrayList;
     private static ArrayList<String> operandArrayList;
     private static ArrayList<String> operandArrayList_Hex;
@@ -22,19 +22,18 @@ public class Stasm {
      */
     public static void main(String[] args) {
 
-        instructionArrayList = new ArrayList<CPU_Instruction>();
-        opcodeArrayList = new ArrayList<CPU_Opcode>();
+        instructionArrayList = new ArrayList<Instruction>();
+        opcodeArrayList = new ArrayList<Opcode>();
         mnemonicArrayList = new ArrayList<String>();
         operandArrayList = new ArrayList<String>();
         operandArrayList_Hex = new ArrayList<String>();
         outputList = new ArrayList<String>();
-
         opcodeHashMap = new HashMap<String, String>();
         labelValueHashMap = new HashMap<String, String>();
-
         fileName = "";
         isPrintToConsole = false;
-        // parse arguments from th
+
+        // parse arguments from console
         parseArgs(args);
 
         // Creates HashMap of valid opCodes and their respective Machine Code
@@ -80,7 +79,7 @@ public class Stasm {
                     USAGE: java Stasm.java <source file> <object file> [-l]
                     -l : print listing to standard output
                     """;
-            System.out.println(errorMessage);
+            System.err.println(errorMessage);
             System.exit(42);
         }
 
@@ -96,7 +95,7 @@ public class Stasm {
      * @param opcodeHashMap
      * @param fileName
      */
-    private static void initInstructionArrayList(ArrayList<CPU_Instruction> instructionArrayList, HashMap<String, String> opcodeHashMap) {
+    private static void initInstructionArrayList(ArrayList<Instruction> instructionArrayList, HashMap<String, String> opcodeHashMap) {
         try {
             File myObj = new File(fileName);
             Scanner sc = new Scanner(myObj);
@@ -126,11 +125,12 @@ public class Stasm {
                     } else
                         operand = next;
                 }
-                CPU_Instruction instruction = new CPU_Instruction(label, mnemonic, operand, comment);
+                Instruction instruction = new Instruction(label, mnemonic, operand, comment);
                 instructionArrayList.add(instruction);
             }
             sc.close();
         } catch (FileNotFoundException e) {
+            System.err.println("File " + fileName + " could not be located");
             e.printStackTrace();
         }
     }
@@ -139,8 +139,8 @@ public class Stasm {
      * @param instructionArrayList
      * @param labelValueHashMap
      */
-    private static void initLabelValueHashMap(ArrayList<CPU_Instruction> instructionArrayList, HashMap<String, String> labelValueHashMap) {
-        for (CPU_Instruction instruction : instructionArrayList) {
+    private static void initLabelValueHashMap(ArrayList<Instruction> instructionArrayList, HashMap<String, String> labelValueHashMap) {
+        for (Instruction instruction : instructionArrayList) {
             if (instruction.getLabel() != null) {
                 labelValueHashMap.put(instruction.getLabel(), String.valueOf(instructionArrayList.indexOf(instruction)));
             }
@@ -151,9 +151,9 @@ public class Stasm {
      * @param fistScanList
      * @param labelAddressMap
      */
-    private static void replaceListLabelsWithLabelValues(ArrayList<CPU_Instruction> fistScanList,
+    private static void replaceListLabelsWithLabelValues(ArrayList<Instruction> fistScanList,
                                                          HashMap<String, String> labelAddressMap) {
-        for (CPU_Instruction instruction : fistScanList) {
+        for (Instruction instruction : fistScanList) {
             String op = instruction.getOperand();
             if (isStringOnlyAlphabet(op)) {
                 instruction.setOperand(labelAddressMap.get(op));
@@ -166,11 +166,11 @@ public class Stasm {
      * @param mnemonicArrayList
      * @param operandArrayList
      */
-    private static void initOperandArrayList(ArrayList<CPU_Instruction> instructionArrayList, ArrayList<String> mnemonicArrayList,
+    private static void initOperandArrayList(ArrayList<Instruction> instructionArrayList, ArrayList<String> mnemonicArrayList,
                                              ArrayList<String> operandArrayList) {
 
         for (int i = 0; i < instructionArrayList.size(); i++) {
-            CPU_Instruction instruction = instructionArrayList.get(i);
+            Instruction instruction = instructionArrayList.get(i);
 
             String mnemonic = instruction.getMnemonic();
             String operand = instruction.getOperand();
@@ -200,11 +200,11 @@ public class Stasm {
      * @param mnemonicArrayList
      * @param operandArrayList_Hex
      */
-    private static void initOpcodeArrayList(ArrayList<CPU_Opcode> opcodeArrayList, ArrayList<String> mnemonicArrayList, ArrayList<String> operandArrayList_Hex) {
+    private static void initOpcodeArrayList(ArrayList<Opcode> opcodeArrayList, ArrayList<String> mnemonicArrayList, ArrayList<String> operandArrayList_Hex) {
 
         for (int i = 0; i < mnemonicArrayList.size(); i++)
             if (!(mnemonicArrayList.get(i).equals("DW"))) {
-                CPU_Opcode code = new CPU_Opcode(mnemonicArrayList.get(i),operandArrayList_Hex.get(i));
+                Opcode code = new Opcode(mnemonicArrayList.get(i),operandArrayList_Hex.get(i));
                 opcodeArrayList.add(code);
             }
     }
@@ -214,9 +214,9 @@ public class Stasm {
      * @param opcodeArrayList
      * @param outputList
      */
-    private static void replaceMnemonicsWithOpcodes(HashMap<String, String> opcodeHashMap, ArrayList<CPU_Opcode> opcodeArrayList, ArrayList<String> outputList) {
+    private static void replaceMnemonicsWithOpcodes(HashMap<String, String> opcodeHashMap, ArrayList<Opcode> opcodeArrayList, ArrayList<String> outputList) {
 
-        for (CPU_Opcode code : opcodeArrayList) {
+        for (Opcode code : opcodeArrayList) {
             String key = code.getMnemonic();
             String val = code.getOperand();
             String val2 = opcodeHashMap.get(key);
@@ -260,7 +260,7 @@ public class Stasm {
      */
     private static void printMap(ArrayList<String> outputList) {
         for (String item : outputList)
-            System.out.println(item);
+            System.err.println(item);
     }
 
     /**
@@ -357,13 +357,13 @@ public class Stasm {
 /**
  *
  */
-class CPU_Instruction {
+class Instruction {
     private String label;
     private String mnemonic;
     private String operand;
     private String comment;
 
-    public CPU_Instruction(String label, String mnemonic, String operand, String comment) {
+    public Instruction(String label, String mnemonic, String operand, String comment) {
         this.label = label;
         this.mnemonic = mnemonic;
         this.operand = operand;
@@ -388,7 +388,7 @@ class CPU_Instruction {
 
     @Override
     public String toString() {
-        System.out.println(this.label + " " + this.mnemonic + " " + this.operand + " " + this.comment);
+        System.err.println(this.label + " " + this.mnemonic + " " + this.operand + " " + this.comment);
         return null;
     }
 }
@@ -397,12 +397,12 @@ class CPU_Instruction {
 /**
  *
  */
-class CPU_Opcode {
+class Opcode {
     private String mnemonic;
     private String operand;
 
 
-    public CPU_Opcode(String mnemonic, String operand) {
+    public Opcode(String mnemonic, String operand) {
         this.mnemonic = mnemonic;
         this.operand = operand;
     }
@@ -417,7 +417,7 @@ class CPU_Opcode {
 
     @Override
     public String toString() {
-        System.out.println(this.mnemonic + " " + this.operand);
+        System.err.println(this.mnemonic + " " + this.operand);
         return null;
     }
 }
