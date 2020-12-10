@@ -46,3 +46,7 @@ NOT ;Comments Go Here
 HALT 000 ;Comments Go Here
 PUSHPC 12 ;Comments Go Here
 POPPC 12 ;Comments Go Here
+PUSHI 22 ;Comments Go Here
+PUSHI -22 ;Comments Go Here
+PUSHI -44 ;Comments Go Here
+PUSHI -79 ;Comments Go Here

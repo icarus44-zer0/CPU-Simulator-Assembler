@@ -63,12 +63,20 @@ public class Stasm {
         // F000"
         replaceMnemonicsWithOpcodes(opcodeHashMap, opcodeArrayList, outputList);
 
+        // parses the file for negative hex values and convertes them to there respective
+        // values "1ffffffea" -> "1fea"
+        fixNegativeInputs(outputList);
+
+        // Converts all list values toUpper()
+        allValuesToUpper(outputList);
+
         // Writes LinkedHashMap out to a objectfile.txt
         writeToObjectFile(outputList);
 
         // Prints LinkedHashMap to the screen. Determined by user args input -l
         if (isPrintToConsole){printMap(outputList);}
     }
+
 
     private static void parseArgs(String[] args) {
         try {
@@ -234,6 +242,29 @@ public class Stasm {
             outputList.add(val);
         }
     }
+
+    /**
+     * used to fix negative Hex Vals
+     * @param outputList
+     */
+    private static void fixNegativeInputs(ArrayList<String> outputList) {
+        for (String elem : outputList){
+            if(elem.length() > 4) {
+                String first = elem.substring(0, 1);
+                String lastThree = elem.substring(elem.lastIndexOf('f'));
+                if (first.length() + lastThree.length() == 4) {
+                    outputList.set(outputList.indexOf(elem), first + lastThree);
+                }
+            }
+        }
+    }
+
+    private static void allValuesToUpper(ArrayList<String> outputList) {
+        for (String elem : outputList) {
+            outputList.set(outputList.indexOf(elem), elem.toUpperCase());
+        }
+    }
+
 
     /**
      *
