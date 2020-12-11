@@ -6,18 +6,26 @@ import java.util.*;
  */
 @SuppressWarnings("all")
 public class Stasm {
+    // used for storing data in standardised form
     private static ArrayList<Instruction> instructionArrayList;
     private static ArrayList<Opcode> opcodeArrayList;
 
+    // used for printing output to the screen
+    private static ArrayList<MachineState> machineStatesArrayList;
+    private static ArrayList<LableState> lableStateArrayList;
+
+    // used for parsing input file to machine code
     private static ArrayList<String> labelArrayList;
     private static ArrayList<String> mnemonicArrayList;
     private static ArrayList<String> operandArrayList;
     private static ArrayList<String> operandArrayList_Hex;
     private static ArrayList<String> outputList;
 
+    // used to store known opcode values and label values
     private static HashMap<String, String> opcodeHashMap;
     private static HashMap<String, String> labelValueHashMap;
 
+    // member variables
     private static String inputFileName;
     private static String outputFileName;
     private static boolean isPrintToConsole;
@@ -30,13 +38,18 @@ public class Stasm {
 
         instructionArrayList = new ArrayList<Instruction>();
         opcodeArrayList = new ArrayList<Opcode>();
+        machineStatesArrayList = new ArrayList<MachineState>();
+        lableStateArrayList = new ArrayList<LableState>();
+
         labelArrayList = new ArrayList<String>();
         mnemonicArrayList = new ArrayList<String>();
         operandArrayList = new ArrayList<String>();
         operandArrayList_Hex = new ArrayList<String>();
         outputList = new ArrayList<String>();
+
         opcodeHashMap = new HashMap<String, String>();
         labelValueHashMap = new HashMap<String, String>();
+
         inputFileName = "";
         outputFileName = "";
         isPrintToConsole = false;
@@ -94,7 +107,7 @@ public class Stasm {
 
         // parses the file for negative hex values and convertes them to there respective
         // values "1ffffffea" -> "1fea"
-        fixNegativeInputs(outputList);
+        formatNegativeHexVals(outputList);
 
         // Converts all list values toUpper()
         //
@@ -106,7 +119,7 @@ public class Stasm {
 
         // Prints LinkedHashMap to the screen. Determined by user args input -l
         //
-        if (isPrintToConsole){printMap(outputList,mnemonicArrayList,operandArrayList);}
+        if (isPrintToConsole){printMap();}
     }
 
 
@@ -158,6 +171,7 @@ public class Stasm {
                 String comment = null;
                 String line = sc.nextLine();
 
+
                 if (line.contains(";")) {
                     int commentIndex = line.indexOf(";"); // Comment Handling
                     comment = line.substring(commentIndex);
@@ -174,18 +188,25 @@ public class Stasm {
                         label = next.replace(":", "");
                     } else if (opcodeHashMap.containsKey(next)) {
                         mnemonic = next;
-                        counter++;
-                    } else
+                    } else {
                         operand = next;
+                    }
                 }
+
                 Instruction instruction = new Instruction(label, mnemonic, operand, comment);
                 instructionArrayList.add(instruction);
+
+                String address = String.format("%03d", counter);
+                MachineState state = new MachineState(address,null,mnemonic,label,operand,DECTOHEX(operand));
+                machineStatesArrayList.add(state);
+                counter++;
             }
             sc.close();
         } catch (FileNotFoundException e) {
             System.err.println("File " + inputFileName + " could not be located");
             e.printStackTrace();
         }
+
     }
 
     /**
@@ -200,6 +221,15 @@ public class Stasm {
                 labelValueHashMap.put(instruction.getLabel(), instruction.getOperand());
             }
         }
+
+        for (MachineState state : machineStatesArrayList) {
+            if(state.getLabel() != null && state.getLabel().equalsIgnoreCase("END")){
+                labelValueHashMap.put(state.getLabel(), Integer.toString(counter+1));
+            }else if (state.getLabel() != null) {
+                labelValueHashMap.put(state.getLabel(), state.getOperand());
+            }
+        }
+
     }
 
     /**
@@ -212,6 +242,13 @@ public class Stasm {
             String op = instruction.getOperand();
             if (isStringOnlyAlphabet(op)) {
                 instruction.setOperand(labelValueHashMap.get(op));
+            }
+        }
+
+        for (MachineState state : machineStatesArrayList) {
+            String operand = state.getOperand();
+            if (isStringOnlyAlphabet(operand)) {
+                state.setOperand(labelValueHashMap.get(operand));
             }
         }
     }
@@ -229,6 +266,20 @@ public class Stasm {
 
             String mnemonic = instruction.getMnemonic();
             String operand = instruction.getOperand();
+
+            mnemonicArrayList.add(mnemonic);
+
+            if (operand == null) {
+                operand = "";
+            }
+            operandArrayList.add(operand);
+        }
+
+        for (int i = 0; i < machineStatesArrayList.size(); i++) {
+            MachineState state = machineStatesArrayList.get(i);
+
+            String mnemonic = state.getMnemonic();
+            String operand = state.getOperand();
 
             mnemonicArrayList.add(mnemonic);
 
@@ -257,11 +308,13 @@ public class Stasm {
      */
     private static void initOpcodeArrayList(ArrayList<Opcode> opcodeArrayList, ArrayList<String> mnemonicArrayList,
                                             ArrayList<String> operandArrayList_Hex) {
-        for (int i = 0; i < mnemonicArrayList.size(); i++)
+        for (int i = 0; i < mnemonicArrayList.size(); i++) {
             if (mnemonicArrayList.get(i) != null) {
-                Opcode code = new Opcode(mnemonicArrayList.get(i),operandArrayList_Hex.get(i));
+                Opcode code = new Opcode(mnemonicArrayList.get(i), operandArrayList_Hex.get(i));
                 opcodeArrayList.add(code);
             }
+        }
+
     }
 
     /**
@@ -287,19 +340,45 @@ public class Stasm {
             }
             outputList.add(val);
         }
+
+        for (MachineState state : machineStatesArrayList) {
+            if (state.getMnemonic() != null) {
+                String opCode = opcodeHashMap.get(state.getMnemonic());
+                state.setOpCode(opCode);
+            }
+        }
+        for (MachineState state : machineStatesArrayList) {
+            if (state.getOpCode() != null && state.getOpCode().length() == 1) {
+                String hex = state.getHex();
+                String opCode = state.getOpCode();
+                hex = String.format("%1$" + 3 + "s", hex).replace(' ', '0');
+                state.setOpCode(opCode+hex);
+            }
+        }
     }
 
     /**
      * used to fix negative Hex Vals
      * @param outputList
      */
-    private static void fixNegativeInputs(ArrayList<String> outputList) {
+    private static void formatNegativeHexVals(ArrayList<String> outputList) {
         for (String elem : outputList){
             if(elem.length() > 4) {
                 String first = elem.substring(0, 1);
                 String lastThree = elem.substring(elem.length()-3);
                 if (first.length() + lastThree.length() == 4) {
                     outputList.set(outputList.indexOf(elem), first + lastThree);
+                }
+            }
+        }
+
+        for (MachineState state : machineStatesArrayList){
+            if(state.getOpCode() != null && state.getOpCode().length() > 4) {
+                String opCode = state.getOpCode();
+                String first = opCode.substring(0, 1);
+                String lastThree = opCode.substring(opCode.length() - 3);
+                if (first.length() + lastThree.length() == 4) {
+                    state.setOpCode(first + lastThree);
                 }
             }
         }
@@ -337,53 +416,10 @@ public class Stasm {
      * @param mnemonicArrayList
      * @param outputList
      */
-    private static void printMap(ArrayList<String> outputList, ArrayList<String> mnemonicArrayList, ArrayList<String> operandArrayList) {
-        //sample output
-        String header1 = """
-                *** LABEL LIST ***
-                """;
-        String header2 = """
-                *** MACHINE PROGRAM ***
-                """;
-
-        System.err.println(header1);
-
-        System.err.println(header2);
-        //System.err.println("outputList: " + outputList.toString() +"\nmnemonicArrayList: "+ mnemonicArrayList.toString() +"\noperandArrayList: "+operandArrayList.toString());
-        int j= 0;
-        int k = 0;
-        for (int i = 0 ; i < outputList.size(); i++) {
-            String str = String.format("%03d", i);
-
-            if(mnemonicArrayList.get(j) == null){
-                if(instructionArrayList.get(j) != null) {
-                    System.err.print(str + ":0000\t");
-
-                    while(instructionArrayList.get(k).getLabel() == null) {
-                        k++;
-                    }
-                    System.err.print(instructionArrayList.get(k).getLabel());
-                    System.err.print(": ");
-                    System.err.print(instructionArrayList.get(k).getOperand());
-                    System.err.println();
-                }
-            }else {
-                System.err.print(str + ":"+ outputList.get(i));
-                System.err.print("\t"+ mnemonicArrayList.get(j));
-                System.err.print(" " + operandArrayList.get(j));
-                System.err.println();
-                j++;
+    private static void printMap() {
+        for (MachineState state : machineStatesArrayList){
+            System.err.print(state.toString());
             }
-            j++;
-        }
-
-        for (String item : mnemonicArrayList) {
-
-        }
-
-        for (String item : operandArrayList) {
-
-        }
     }
 
     /**
@@ -458,12 +494,16 @@ public class Stasm {
          * @return data In Hex
          */
         private static String DECTOHEX(String data) {
-            if (data.equals("")) {
-                return "";
+            try {
+                int num = Integer.parseInt(data);
+                String ret = Integer.toHexString(num);
+                return ret;
+            } catch (NumberFormatException e) {
+                //
+            } catch (NullPointerException e) {
+                //
             }
-            int num = Integer.parseInt(data);
-            String ret = Integer.toHexString(num);
-            return ret;
+            return "";
         }
 
         /**
@@ -552,13 +592,17 @@ public class Stasm {
         private String address;
         private String opCode;
         private String mnemonic;
+        private String label;
         private String operand;
+        private String hex;
 
-        public MachineState(String address, String opCode, String mnemonic, String operand) {
+        public MachineState(String address, String opCode, String mnemonic, String label, String operand, String hex) {
             this.address = address;
             this.opCode = opCode;
             this.mnemonic = mnemonic;
+            this.label = label;
             this.operand = operand;
+            this.hex = hex;
         }
 
         public String getAddress() {
@@ -585,6 +629,14 @@ public class Stasm {
             this.mnemonic = mnemonic;
         }
 
+        public String getLabel() {
+            return label;
+        }
+
+        public void setLabel(String label) {
+            this.label = label;
+        }
+
         public String getOperand() {
             return operand;
         }
@@ -593,14 +645,24 @@ public class Stasm {
             this.operand = operand;
         }
 
+        public String getHex() {
+            return hex;
+        }
+
+        public void setHex(String hex) {
+            this.hex = hex;
+        }
+
         @Override
         public String toString() {
-            return "MachineState{" +
-                    "address='" + address + '\'' +
-                    ", opCode='" + opCode + '\'' +
-                    ", mnemonic='" + mnemonic + '\'' +
-                    ", operand='" + operand + '\'' +
-                    '}';
+            return "MachineState {" +
+                    " address:'" + address +  "\t" +
+                    " opCode:'" + opCode +  "\t" +
+                    " mnemonic:'" + mnemonic + "\t" +
+                    " label:'" + label  + "\t" +
+                    " operand:'" + operand + "\t" +
+                    " hex:'" + hex + "\t" +
+                    '}' +"\n";
         }
     }
 
