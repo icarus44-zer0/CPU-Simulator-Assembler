@@ -6,14 +6,9 @@ import java.util.*;
  */
 @SuppressWarnings("all")
 public class Stasm {
-    // used for printing output to the screen
     private static ArrayList<MachineState> machineStatesArrayList;
-
-    // used to store known opcode values and label values
     private static HashMap<String, String> opcodeHashMap;
-    private static HashMap<String, String> labelValueHashMap;
-
-    // member variables
+    private static LinkedHashMap<String, ArrayList> labelValueHashMap;
     private static String inputFileName;
     private static String outputFileName;
     private static boolean isPrintToConsole;
@@ -26,7 +21,7 @@ public class Stasm {
         machineStatesArrayList = new ArrayList<MachineState>();
 
         opcodeHashMap = new HashMap<String, String>();
-        labelValueHashMap = new HashMap<String, String>();
+        labelValueHashMap = new LinkedHashMap<String, ArrayList>();
 
         inputFileName = "";
         outputFileName = "";
@@ -59,7 +54,7 @@ public class Stasm {
 
         //if (isPrintToConsole){printMap();}
         // Builds HashMap of Variables listed in input file and assigns value as their
-        initLabelValueHashMap();
+        parseLabelsWithNoOpperands();
 
         // Swaps all variable operands in fistScanList in with their value from
         replaceListLabelsWithLabelValues();
@@ -121,82 +116,98 @@ public class Stasm {
         }
     }
 
-    /**
-     * @param instructionArrayList
-     * @param opcodeHashMap
-     * @param fileName
-     */
     private static void initMachineStateArrayList() {
         try {
             File myObj = new File(inputFileName);
             Scanner sc = new Scanner(myObj);
-            while (sc.hasNextLine()) {
+            while (sc.hasNextLine()){
+
+                String line = null;
                 String label = null;
                 String mnemonic = null;
                 String operand = null;
                 String comment = null;
-                String line = sc.nextLine();
 
-
-                if (line.contains(";")) {
-                    int commentIndex = line.indexOf(";"); // Comment Handling
-                    comment = line.substring(commentIndex);
-                    line = line.replaceAll(comment, "");
-                    comment = comment.replace(";", "");// Comment Handling
+                line = sc.nextLine();
+                if(line.isEmpty()){
+                    continue;
                 }
+                    if (line.contains(";")) {
+                        int commentIndex = line.indexOf(";"); // Comment Handling
+                        comment = line.substring(commentIndex);
+                        line = line.replaceAll(comment, "");
+                        comment = comment.replace(";", "");// Comment Handling
+                    }
 
-                StringTokenizer defaultTokenizer = new StringTokenizer(line);
+                    StringTokenizer defaultTokenizer = new StringTokenizer(line);
 
-                while (defaultTokenizer.hasMoreTokens()) {
-                    String next = defaultTokenizer.nextToken();
+                    while (defaultTokenizer.hasMoreTokens()) {
+                        String next = defaultTokenizer.nextToken();
 
-                    if (next.contains(":")) {
-                        label = next.replace(":", "");
-                    } else if (opcodeHashMap.containsKey(next)) {
-                        mnemonic = next;
-                    } else {
-                        operand = next;
+                        if (next.contains(":")) {
+                            label = next.replace(":", "");
+                        } else if (opcodeHashMap.containsKey(next)) {
+                            mnemonic = next;
+                        } else {
+                            operand = next;
+                        }
+                    }
+                    //loks for EOF signal "END"
+                    if(!(label == null) && (label.equalsIgnoreCase("END"))) {
+                        ArrayList<String> labelData = new ArrayList<String>();
+                        labelData.add(operand);
+                        labelData.add(Integer.toString(counter));
+                        labelValueHashMap.put(label,labelData);
+                    }
+                    //ignores labels with no Opperand
+                     else if( !(label == null) && (operand == null) && !(label.equalsIgnoreCase("END")) ){
+                        labelValueHashMap.put(label,null);
+                    }
+                    //Adds labels with Opperand to labelValueHashMap and machineStatesArrayList
+                    else if( !(label == null) && !(operand == null) && !(label.equalsIgnoreCase("END")) ){
+                        labelValueHashMap.put(label,operand);
+                        String address = String.format("%03d", counter);
+                        MachineState state = new MachineState(address, null, mnemonic, label, operand, DECTOHEX(operand));
+                        machineStatesArrayList.add(state);
+                        counter++;
+                    }
+                    //ignores lines with only comments
+                    else if( !(label == null) || !(mnemonic == null) || !(operand == null) ) {
+                        String address = String.format("%03d", counter);
+                        MachineState state = new MachineState(address, null, mnemonic, label, operand, DECTOHEX(operand));
+                        machineStatesArrayList.add(state);
+                        counter++;
                     }
                 }
 
-                String address = String.format("%03d", counter);
-                MachineState state = new MachineState(address,null,mnemonic,label,operand,DECTOHEX(operand));
-                machineStatesArrayList.add(state);
-                counter++;
-            }
             sc.close();
         } catch (FileNotFoundException e) {
             System.err.println("File " + inputFileName + " could not be located");
             e.printStackTrace();
         }
-
     }
 
-    /**
-     * @param fistScanList
-     * @param labelAddressMap
-     */
-    private static void initLabelValueHashMap() {
-        for (MachineState state : machineStatesArrayList) {
-            if (state.getLabel() != null) {
-                String label = state.getLabel();
-                if(label.equalsIgnoreCase("END")){
-                    labelValueHashMap.put(label,state.getAddress());
-                }else if(state.getOperand() != null) {
-                    String opperand = state.getOperand();
-                    labelValueHashMap.put(label,opperand);
-                }else if (state.getOperand() == null) {
-                    //TODO assign next map value to label if label null
-                    labelValueHashMap.put(label,state.getAddress());
+    private static void parseLabelsWithNoOpperands() {
+        ArrayList<String> keysWithNoValues = new ArrayList<String>();
+
+        for (Map.Entry<String, String> entry : labelValueHashMap.entrySet()) {
+            String key = entry.getKey();
+            String value = entry.getValue();
+
+            if(value == null){
+                keysWithNoValues.add(key);
+            }
+            if(value != null && keysWithNoValues.size() != 0){
+                int i = 0;
+                while (!(keysWithNoValues.isEmpty())){
+                    String key2 = keysWithNoValues.get(0);
+                    labelValueHashMap.put(key2,value);
+                    keysWithNoValues.remove(0);
                 }
             }
         }
     }
 
-    /**
-     * @param fistScanList
-     * @param labelAddressMap
-     */
     private static void replaceListLabelsWithLabelValues() {
         for (MachineState state : machineStatesArrayList) {
             String operand = state.getOperand();
@@ -206,12 +217,6 @@ public class Stasm {
         }
     }
 
-
-    /**
-     * @param opcodeHashMap
-     * @param opcodeArrayList
-     * @param outputList
-     */
     private static void replaceMnemonicsWithOpcodes() {
         for (MachineState state : machineStatesArrayList) {
             if (state.getMnemonic() != null) {
@@ -231,10 +236,7 @@ public class Stasm {
             }
         }
     }
-    /**
-     * used to fix negative Hex Vals
-     * @param outputList
-     */
+
     private static void formatNegativeHexVals() {
         for (MachineState state : machineStatesArrayList){
             if(state.getOpCode() != null && state.getOpCode().length() > 4) {
@@ -277,24 +279,6 @@ public class Stasm {
         }
     }
 
-    /**
-     *
-     * @param list
-     * @param mnemonicArrayList
-     * @param outputList
-     *
-     * SAMPLE
-     * *** LABEL LIST ***
-     * k 005
-     * *** MACHINE PROGRAM ***
-     * 000:10E1 PUSHI 225
-     * 001:100F PUSHI 15
-     * 002:F000 ADD
-     * 003:3005 POP k
-     * 004:0F00 HALT
-     * 005:0000 k: 0
-     *
-     */
     private static void printMap() {
         StringBuilder builder = new StringBuilder();
         String header1 = "*** LABEL LIST ***";
@@ -304,11 +288,11 @@ public class Stasm {
 
         for (MachineState state : machineStatesArrayList){
             if(state.getLabel() != null){
-                builder.append(state.getLabel() + " " + state.getAddress() + "\n");
+                builder.append(state.getLabel() + "\t\t" + state.getAddress() + "\n");
             }
         }
 
-        builder.append(header2 + "\n");
+        builder.append("\n"+ header2 + "\n");
 
         for (MachineState state : machineStatesArrayList){
             String address = "";
@@ -319,11 +303,11 @@ public class Stasm {
 
             if(state.getAddress() != null){
                 address = state.getAddress();
-                builder.append(state.getAddress() + ": " );
+                builder.append(state.getAddress() + ":" );
             }
             if(state.getOpCode() != null){
                 opcode = state.getOpCode();
-                builder.append(state.getOpCode() + " " );
+                builder.append(state.getOpCode() + "\t\t" );
             }
             if(state.getMnemonic() != null){
                 mnemonic = state.getMnemonic();
@@ -331,7 +315,7 @@ public class Stasm {
             }
             if(state.getLabel() != null){
                 label = state.getLabel();
-                builder.append("0000 " + state.getLabel() + ": ");
+                builder.append("0000\t\t" + state.getLabel() + ": ");
             }
             if(state.getOperand() != null){
                 opperand = state.getOperand();
@@ -342,10 +326,6 @@ public class Stasm {
         System.err.print(builder);
     }
 
-    /**
-     *
-     * @param opcodeHashMap
-     */
     private static void initOpcodeHashMap() {
         opcodeHashMap.put("NOP", "0000");
         opcodeHashMap.put("HALT", "0F00");
@@ -358,14 +338,14 @@ public class Stasm {
         opcodeHashMap.put("OVER", "0700");
         opcodeHashMap.put("DNEXT", "0800");
         opcodeHashMap.put("SWAP", "0900");
-        opcodeHashMap.put("PUSHI", "1"); // + I
-        opcodeHashMap.put("PUSH", "2"); // + A
-        opcodeHashMap.put("POP", "3"); // + A
-        opcodeHashMap.put("JMP", "4"); // + A
-        opcodeHashMap.put("JZ", "5"); // + A
-        opcodeHashMap.put("JNZ", "6"); // + A
-        opcodeHashMap.put("IN", "D"); // + P
-        opcodeHashMap.put("OUT", "E"); // + P
+        opcodeHashMap.put("PUSHI", "1");    // + I
+        opcodeHashMap.put("PUSH", "2");     // + A
+        opcodeHashMap.put("POP", "3");      // + A
+        opcodeHashMap.put("JMP", "4");      // + A
+        opcodeHashMap.put("JZ", "5");       // + A
+        opcodeHashMap.put("JNZ", "6");      // + A
+        opcodeHashMap.put("IN", "D");       // + P
+        opcodeHashMap.put("OUT", "E");      // + P
         opcodeHashMap.put("ADD", "F000");
         opcodeHashMap.put("SUB", "F001");
         opcodeHashMap.put("MUL", "F002");
@@ -390,29 +370,14 @@ public class Stasm {
         //opcodeHashMap.put("DW", "");
     }
 
-        /**
-         *
-         * @param data
-         * @return data in int
-         */
         private static int HEXTODEC(String data) {
             return Integer.parseInt(data, 16);
         }
 
-        /**
-         *
-         * @param data
-         * @return data In Hex
-         */
         private static String DECTOHEX(int data) {
             return Integer.toHexString(data);
         }
 
-        /**
-         *
-         * @param data
-         * @return data In Hex
-         */
         private static String DECTOHEX(String data) {
             try {
                 int num = Integer.parseInt(data);
@@ -426,20 +391,12 @@ public class Stasm {
             return "";
         }
 
-        /**
-         *
-         * @param str
-         * @return
-         */
         public static boolean isStringOnlyAlphabet(String str) {
 
             return ((str != null) && (str.matches("^[a-zA-Z]*$")));
         }
     }
 
-    /**
-     *
-     */
     class MachineState {
         private String address;
         private String opCode;
