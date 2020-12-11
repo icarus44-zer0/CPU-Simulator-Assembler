@@ -8,13 +8,18 @@ import java.util.*;
 public class Stasm {
     private static ArrayList<Instruction> instructionArrayList;
     private static ArrayList<Opcode> opcodeArrayList;
+
+    private static ArrayList<String> labelArrayList;
     private static ArrayList<String> mnemonicArrayList;
     private static ArrayList<String> operandArrayList;
     private static ArrayList<String> operandArrayList_Hex;
     private static ArrayList<String> outputList;
+
     private static HashMap<String, String> opcodeHashMap;
     private static HashMap<String, String> labelValueHashMap;
-    private static String fileName;
+
+    private static String inputFileName;
+    private static String outputFileName;
     private static boolean isPrintToConsole;
     private static int counter;
 
@@ -25,13 +30,15 @@ public class Stasm {
 
         instructionArrayList = new ArrayList<Instruction>();
         opcodeArrayList = new ArrayList<Opcode>();
+        labelArrayList = new ArrayList<String>();
         mnemonicArrayList = new ArrayList<String>();
         operandArrayList = new ArrayList<String>();
         operandArrayList_Hex = new ArrayList<String>();
         outputList = new ArrayList<String>();
         opcodeHashMap = new HashMap<String, String>();
         labelValueHashMap = new HashMap<String, String>();
-        fileName = "";
+        inputFileName = "";
+        outputFileName = "";
         isPrintToConsole = false;
         counter = 0;
 
@@ -39,15 +46,16 @@ public class Stasm {
         // debug method allows src code to compile without
         // coomand line arguments being supplied
         // output file will be sent to outide of the src dir
-        if(false){
+        if(true){
             System.err.println("""
                     *
                     * The debug flag for this program has been set to true.
                     *
                     """);
-            args = new String[2];
+            args = new String[3];
             args[0] = "src/input.txt";
-            args[1] = "-l";
+            args[1] = "src/output.txt";
+            args[2] = "-l";
         }
 
         // parse arguments from console
@@ -65,15 +73,19 @@ public class Stasm {
         initLabelValueHashMap(instructionArrayList, labelValueHashMap);
 
         // Swaps all variable operands in fistScanList in with their value from
+        //
         replaceListLabelsWithLabelValues(instructionArrayList, labelValueHashMap);
 
         // Builds ArrayList of just Mnemonic and operand
+        //
         initOperandArrayList(instructionArrayList, mnemonicArrayList, operandArrayList);
 
         // Converts Integers to Hex
+        //
         operandArrayListToHex(operandArrayList, operandArrayList_Hex);
 
         // Creates LinkedHashMap with the Mnemonic and Hex Value
+        //
         initOpcodeArrayList(opcodeArrayList, mnemonicArrayList, operandArrayList_Hex);
 
         // Swaps LinkedHashMap Mnemonic opcodes with Machine Language opcode "i.e ADD ->
@@ -85,19 +97,22 @@ public class Stasm {
         fixNegativeInputs(outputList);
 
         // Converts all list values toUpper()
+        //
         allValuesToUpper(outputList);
 
         // Writes LinkedHashMap out to a objectfile.txt
+        //
         writeToObjectFile(outputList);
 
         // Prints LinkedHashMap to the screen. Determined by user args input -l
-        if (isPrintToConsole){printMap(outputList);}
+        //
+        if (isPrintToConsole){printMap(outputList,mnemonicArrayList,operandArrayList);}
     }
 
 
     private static void parseArgs(String[] args) {
         try {
-            fileName = args[0];
+            inputFileName = args[0];
         }catch (ArrayIndexOutOfBoundsException e){
             String errorMessage = """
                     Your command line prompt> java Stasm.java
@@ -109,7 +124,19 @@ public class Stasm {
         }
 
         try {
-            isPrintToConsole = (args[1].equals("-l") ? true : false);
+            outputFileName = args[1];
+        }catch (ArrayIndexOutOfBoundsException e){
+            String errorMessage = """
+                    Your command line prompt> java Stasm.java <source file>
+                    USAGE: java Stasm.java <source file> <object file> [-l]
+                    -l : print listing to standard output
+                    """;
+            System.err.println(errorMessage);
+            System.exit(42);
+        }
+
+        try {
+            isPrintToConsole = (args[2].equals("-l") ? true : false);
         }catch (ArrayIndexOutOfBoundsException e){
             //nothing
         }
@@ -122,7 +149,7 @@ public class Stasm {
      */
     private static void initInstructionArrayList(ArrayList<Instruction> instructionArrayList, HashMap<String, String> opcodeHashMap) {
         try {
-            File myObj = new File(fileName);
+            File myObj = new File(inputFileName);
             Scanner sc = new Scanner(myObj);
             while (sc.hasNextLine()) {
                 String label = null;
@@ -156,7 +183,7 @@ public class Stasm {
             }
             sc.close();
         } catch (FileNotFoundException e) {
-            System.err.println("File " + fileName + " could not be located");
+            System.err.println("File " + inputFileName + " could not be located");
             e.printStackTrace();
         }
     }
@@ -270,7 +297,7 @@ public class Stasm {
         for (String elem : outputList){
             if(elem.length() > 4) {
                 String first = elem.substring(0, 1);
-                String lastThree = elem.substring(elem.lastIndexOf('f'));
+                String lastThree = elem.substring(elem.length()-3);
                 if (first.length() + lastThree.length() == 4) {
                     outputList.set(outputList.indexOf(elem), first + lastThree);
                 }
@@ -292,7 +319,7 @@ public class Stasm {
     private static void writeToObjectFile(ArrayList<String> outputList) {
 
         try {
-            FileWriter myWriter = new FileWriter("output.txt");
+            FileWriter myWriter = new FileWriter(outputFileName);
             myWriter.write("v2.0 raw");
 
             for (String item : outputList) {
@@ -306,11 +333,57 @@ public class Stasm {
 
     /**
      *
+     * @param list
+     * @param mnemonicArrayList
      * @param outputList
      */
-    private static void printMap(ArrayList<String> outputList) {
-        for (String item : outputList)
-            System.err.println(item);
+    private static void printMap(ArrayList<String> outputList, ArrayList<String> mnemonicArrayList, ArrayList<String> operandArrayList) {
+        //sample output
+        String header1 = """
+                *** LABEL LIST ***
+                """;
+        String header2 = """
+                *** MACHINE PROGRAM ***
+                """;
+
+        System.err.println(header1);
+
+        System.err.println(header2);
+        //System.err.println("outputList: " + outputList.toString() +"\nmnemonicArrayList: "+ mnemonicArrayList.toString() +"\noperandArrayList: "+operandArrayList.toString());
+        int j= 0;
+        int k = 0;
+        for (int i = 0 ; i < outputList.size(); i++) {
+            String str = String.format("%03d", i);
+
+            if(mnemonicArrayList.get(j) == null){
+                if(instructionArrayList.get(j) != null) {
+                    System.err.print(str + ":0000\t");
+
+                    while(instructionArrayList.get(k).getLabel() == null) {
+                        k++;
+                    }
+                    System.err.print(instructionArrayList.get(k).getLabel());
+                    System.err.print(": ");
+                    System.err.print(instructionArrayList.get(k).getOperand());
+                    System.err.println();
+                }
+            }else {
+                System.err.print(str + ":"+ outputList.get(i));
+                System.err.print("\t"+ mnemonicArrayList.get(j));
+                System.err.print(" " + operandArrayList.get(j));
+                System.err.println();
+                j++;
+            }
+            j++;
+        }
+
+        for (String item : mnemonicArrayList) {
+
+        }
+
+        for (String item : operandArrayList) {
+
+        }
     }
 
     /**
@@ -361,113 +434,209 @@ public class Stasm {
         //opcodeHashMap.put("DW", "");
     }
 
-    /**
-     *
-     * @param data
-     * @return data in int
-     */
-    private static int HEXTODEC(String data) {
-        return Integer.parseInt(data, 16);
-    }
-
-    /**
-     *
-     * @param data
-     * @return data In Hex
-     */
-    private static String DECTOHEX(int data) {
-        return Integer.toHexString(data);
-    }
-
-    /**
-     *
-     * @param data
-     * @return data In Hex
-     */
-    private static String DECTOHEX(String data) {
-        if (data.equals("")) {
-            return "";
+        /**
+         *
+         * @param data
+         * @return data in int
+         */
+        private static int HEXTODEC(String data) {
+            return Integer.parseInt(data, 16);
         }
-        int num = Integer.parseInt(data);
-        String ret = Integer.toHexString(num);
-        return ret;
+
+        /**
+         *
+         * @param data
+         * @return data In Hex
+         */
+        private static String DECTOHEX(int data) {
+            return Integer.toHexString(data);
+        }
+
+        /**
+         *
+         * @param data
+         * @return data In Hex
+         */
+        private static String DECTOHEX(String data) {
+            if (data.equals("")) {
+                return "";
+            }
+            int num = Integer.parseInt(data);
+            String ret = Integer.toHexString(num);
+            return ret;
+        }
+
+        /**
+         *
+         * @param str
+         * @return
+         */
+        public static boolean isStringOnlyAlphabet(String str) {
+
+            return ((str != null) && (str.matches("^[a-zA-Z]*$")));
+        }
     }
 
     /**
      *
-     * @param str
-     * @return
      */
-    public static boolean isStringOnlyAlphabet(String str) {
+    class Instruction {
+        private String label;
+        private String mnemonic;
+        private String operand;
+        private String comment;
 
-        return ((str != null) && (str.matches("^[a-zA-Z]*$")));
-    }
-}
+        public Instruction(String label, String mnemonic, String operand, String comment) {
+            this.label = label;
+            this.mnemonic = mnemonic;
+            this.operand = operand;
+            this.comment = comment;
+        }
 
-/**
- *
- */
-class Instruction {
-    private String label;
-    private String mnemonic;
-    private String operand;
-    private String comment;
+        public String getLabel() { return label;    }
 
-    public Instruction(String label, String mnemonic, String operand, String comment) {
-        this.label = label;
-        this.mnemonic = mnemonic;
-        this.operand = operand;
-        this.comment = comment;
-    }
+        public void setLabel(String label) {this.label = label;}
 
-    public String getLabel() { return label;    }
+        public String getMnemonic() {return mnemonic;}
 
-    public void setLabel(String label) {this.label = label;}
+        public void setMnemonic(String mnemonic) {this.mnemonic = mnemonic;}
 
-    public String getMnemonic() {return mnemonic;}
+        public String getOperand() {return operand;}
 
-    public void setMnemonic(String mnemonic) {this.mnemonic = mnemonic;}
+        public void setOperand(String operand) {this.operand = operand;}
 
-    public String getOperand() {return operand;}
+        public String getComment() {return comment;}
 
-    public void setOperand(String operand) {this.operand = operand;}
+        public void setComment(String comment) {this.comment = comment;}
 
-    public String getComment() {return comment;}
-
-    public void setComment(String comment) {this.comment = comment;}
-
-    @Override
-    public String toString() {
-        System.err.println(this.label + " " + this.mnemonic + " " + this.operand + " " + this.comment);
-        return null;
-    }
-}
-
-
-/**
- *
- */
-class Opcode {
-    private String mnemonic;
-    private String operand;
-
-
-    public Opcode(String mnemonic, String operand) {
-        this.mnemonic = mnemonic;
-        this.operand = operand;
+        @Override
+        public String toString() {
+            System.err.println(this.label + " " + this.mnemonic + " " + this.operand + " " + this.comment);
+            return null;
+        }
     }
 
-    public String getMnemonic() {return mnemonic;}
 
-    public void setMnemonic(String mnemonic) {this.mnemonic = mnemonic;}
+    /**
+     *
+     */
+    class Opcode {
+        private String mnemonic;
+        private String operand;
 
-    public String getOperand() {return operand;}
 
-    public void setOperand(String operand) {this.operand = operand;}
+        public Opcode(String mnemonic, String operand) {
+            this.mnemonic = mnemonic;
+            this.operand = operand;
+        }
 
-    @Override
-    public String toString() {
-        System.err.println(this.mnemonic + " " + this.operand);
-        return null;
+        public String getMnemonic() {return mnemonic;}
+
+        public void setMnemonic(String mnemonic) {this.mnemonic = mnemonic;}
+
+        public String getOperand() {return operand;}
+
+        public void setOperand(String operand) {this.operand = operand;}
+
+        @Override
+        public String toString() {
+            System.err.println(this.mnemonic + " " + this.operand);
+            return null;
+        }
     }
-}
+
+    /**
+     *
+     */
+    class MachineState {
+        private String address;
+        private String opCode;
+        private String mnemonic;
+        private String operand;
+
+        public MachineState(String address, String opCode, String mnemonic, String operand) {
+            this.address = address;
+            this.opCode = opCode;
+            this.mnemonic = mnemonic;
+            this.operand = operand;
+        }
+
+        public String getAddress() {
+            return address;
+        }
+
+        public void setAddress(String address) {
+            this.address = address;
+        }
+
+        public String getOpCode() {
+            return opCode;
+        }
+
+        public void setOpCode(String opCode) {
+            this.opCode = opCode;
+        }
+
+        public String getMnemonic() {
+            return mnemonic;
+        }
+
+        public void setMnemonic(String mnemonic) {
+            this.mnemonic = mnemonic;
+        }
+
+        public String getOperand() {
+            return operand;
+        }
+
+        public void setOperand(String operand) {
+            this.operand = operand;
+        }
+
+        @Override
+        public String toString() {
+            return "MachineState{" +
+                    "address='" + address + '\'' +
+                    ", opCode='" + opCode + '\'' +
+                    ", mnemonic='" + mnemonic + '\'' +
+                    ", operand='" + operand + '\'' +
+                    '}';
+        }
+    }
+
+    /**
+     *
+     */
+    class LableState {
+        private String address;
+        private String opCode;
+
+        public LableState(String address, String opCode) {
+            this.address = address;
+            this.opCode = opCode;
+        }
+
+        public String getAddress() {
+            return address;
+        }
+
+        public void setAddress(String address) {
+            this.address = address;
+        }
+
+        public String getOpCode() {
+            return opCode;
+        }
+
+        public void setOpCode(String opCode) {
+            this.opCode = opCode;
+        }
+
+        @Override
+        public String toString() {
+            return "LableState{" +
+                    "address='" + address + '\'' +
+                    ", opCode='" + opCode + '\'' +
+                    '}';
+        }
+    }

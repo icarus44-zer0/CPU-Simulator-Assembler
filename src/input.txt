@@ -1,6 +1,6 @@
 F: DW 0
-NOP 000
-HALT 000 ;Comments Go Here
+NOP
+HALT ;Comments Go Here
 PUSHPC 12 ;Comments Go Here
 POPPC 12 ;Comments Go Here
 LD  30 ;Comments Go Here
