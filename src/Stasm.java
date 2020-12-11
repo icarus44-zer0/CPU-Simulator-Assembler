@@ -8,7 +8,7 @@ import java.util.*;
 public class Stasm {
     private static ArrayList<MachineState> machineStatesArrayList;
     private static HashMap<String, String> opcodeHashMap;
-    private static LinkedHashMap<String, ArrayList> labelValueHashMap;
+    private static LinkedHashMap<String, String> labelValueHashMap;
     private static String inputFileName;
     private static String outputFileName;
     private static boolean isPrintToConsole;
@@ -21,7 +21,7 @@ public class Stasm {
         machineStatesArrayList = new ArrayList<MachineState>();
 
         opcodeHashMap = new HashMap<String, String>();
-        labelValueHashMap = new LinkedHashMap<String, ArrayList>();
+        labelValueHashMap = new LinkedHashMap<String, String>();
 
         inputFileName = "";
         outputFileName = "";
@@ -154,10 +154,7 @@ public class Stasm {
                     }
                     //loks for EOF signal "END"
                     if(!(label == null) && (label.equalsIgnoreCase("END"))) {
-                        ArrayList<String> labelData = new ArrayList<String>();
-                        labelData.add(operand);
-                        labelData.add(Integer.toString(counter));
-                        labelValueHashMap.put(label,labelData);
+                        labelValueHashMap.put(label,Integer.toString(counter));
                     }
                     //ignores labels with no Opperand
                      else if( !(label == null) && (operand == null) && !(label.equalsIgnoreCase("END")) ){
