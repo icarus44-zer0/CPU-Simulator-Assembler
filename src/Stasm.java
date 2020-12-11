@@ -8,7 +8,6 @@ import java.util.*;
 public class Stasm {
     // used for printing output to the screen
     private static ArrayList<MachineState> machineStatesArrayList;
-    private static ArrayList<LableState> lableStateArrayList;
 
     // used to store known opcode values and label values
     private static HashMap<String, String> opcodeHashMap;
@@ -25,7 +24,6 @@ public class Stasm {
      */
     public static void main(String[] args) {
         machineStatesArrayList = new ArrayList<MachineState>();
-        lableStateArrayList = new ArrayList<LableState>();
 
         opcodeHashMap = new HashMap<String, String>();
         labelValueHashMap = new HashMap<String, String>();
@@ -174,37 +172,6 @@ public class Stasm {
 
     }
 
-//    /**
-//     * @param instructionArrayList
-//     * @param labelValueHashMap
-//     */
-//    private static void initLabelValueHashMap() {
-//        for (MachineState state : machineStatesArrayList) {
-//            if (state.getOperand() != null && state.getOperand().equalsIgnoreCase("END")) {
-//                    int val = Integer.parseInt(state.getAddress());
-//                    labelValueHashMap.put(state.getLabel(), Integer.toString(val));
-//                    state.setHex(DECTOHEX(val));
-//                    state.setOperand((Integer.toString(val)));
-//            }
-//            if (state.getLabel() != null) {
-//                labelValueHashMap.put(state.getLabel(), state.getOperand());
-//            }
-//        }
-//    }
-
-//    /**
-//     * @param fistScanList
-//     * @param labelAddressMap
-//     */
-//    private static void replaceListLabelsWithLabelValues() {
-//        for (MachineState state : machineStatesArrayList) {
-//            String operand = state.getOperand();
-//            if (isStringOnlyAlphabet(operand)) {
-//                state.setOperand(labelValueHashMap.get(operand));
-//            }
-//        }
-//    }
-
     /**
      * @param fistScanList
      * @param labelAddressMap
@@ -301,7 +268,8 @@ public class Stasm {
             myWriter.write("v2.0 raw");
 
             for (MachineState state : machineStatesArrayList) {
-                myWriter.write("\n" +state.getOpCode());
+                if(state.getOpCode() != null)
+                    myWriter.write("\n" +state.getOpCode());
             }
             myWriter.close();
         } catch (IOException e) {
@@ -314,11 +282,64 @@ public class Stasm {
      * @param list
      * @param mnemonicArrayList
      * @param outputList
+     *
+     * SAMPLE
+     * *** LABEL LIST ***
+     * k 005
+     * *** MACHINE PROGRAM ***
+     * 000:10E1 PUSHI 225
+     * 001:100F PUSHI 15
+     * 002:F000 ADD
+     * 003:3005 POP k
+     * 004:0F00 HALT
+     * 005:0000 k: 0
+     *
      */
     private static void printMap() {
+        StringBuilder builder = new StringBuilder();
+        String header1 = "*** LABEL LIST ***";
+        String header2 = "*** MACHINE PROGRAM ***";
+
+        builder.append(header1 + "\n");
+
         for (MachineState state : machineStatesArrayList){
-            System.err.print(state.toString());
+            if(state.getLabel() != null){
+                builder.append(state.getLabel() + " " + state.getAddress() + "\n");
             }
+        }
+
+        builder.append(header2 + "\n");
+
+        for (MachineState state : machineStatesArrayList){
+            String address = "";
+            String opcode = "";
+            String mnemonic = "";
+            String label = "";
+            String opperand = "";
+
+            if(state.getAddress() != null){
+                address = state.getAddress();
+                builder.append(state.getAddress() + ": " );
+            }
+            if(state.getOpCode() != null){
+                opcode = state.getOpCode();
+                builder.append(state.getOpCode() + " " );
+            }
+            if(state.getMnemonic() != null){
+                mnemonic = state.getMnemonic();
+                builder.append(state.getMnemonic() + " " );
+            }
+            if(state.getLabel() != null){
+                label = state.getLabel();
+                builder.append("0000 " + state.getLabel() + ": ");
+            }
+            if(state.getOperand() != null){
+                opperand = state.getOperand();
+                builder.append(state.getOperand() + " ");
+            }
+            builder.append("\n");
+        }
+        System.err.print(builder);
     }
 
     /**
@@ -494,42 +515,5 @@ public class Stasm {
                     " operand:'" + operand + "\t" +
                     " hex:'" + hex + "\t" +
                     '}' +"\n";
-        }
-    }
-
-    /**
-     *
-     */
-    class LableState {
-        private String address;
-        private String opCode;
-
-        public LableState(String address, String opCode) {
-            this.address = address;
-            this.opCode = opCode;
-        }
-
-        public String getAddress() {
-            return address;
-        }
-
-        public void setAddress(String address) {
-            this.address = address;
-        }
-
-        public String getOpCode() {
-            return opCode;
-        }
-
-        public void setOpCode(String opCode) {
-            this.opCode = opCode;
-        }
-
-        @Override
-        public String toString() {
-            return "LableState{" +
-                    "address='" + address + '\'' +
-                    ", opCode='" + opCode + '\'' +
-                    '}';
         }
     }
