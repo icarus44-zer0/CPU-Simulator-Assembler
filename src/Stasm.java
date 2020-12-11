@@ -8,7 +8,7 @@ import java.util.*;
 public class Stasm {
     private static ArrayList<MachineState> machineStatesArrayList;
     private static HashMap<String, String> opcodeHashMap;
-    private static LinkedHashMap<String, ArrayList> labelValueHashMap; //key: label; Arr[0]: opperand; Arr[1]: address;
+    private static LinkedHashMap<String, ArrayList> labelValueHashMap; //key: label; Arr[0]: Operand; Arr[1]: address;
     private static String inputFileName;
     private static String outputFileName;
     private static boolean isPrintToConsole;
@@ -37,39 +37,41 @@ public class Stasm {
         // parse arguments from console
         parseArgs(args);
 
-        // Creates HashMap of valid opCodes and their respective Machine Code
+        // Creates HashMap of valid opCodes and their respective Machine Code Values
         initOpcodeHashMap();
 
-        // Scans input files and parses data into an Array list fistScanList, of custom
+        // Scans input files and parses data into machineStatesArrayList, 
+        // of type MachineState
         initMachineStateArrayList();
 
-        //if (isPrintToConsole){printMap();}
-        // Builds HashMap of Variables listed in input file and assigns value as their
-        parseLabelsWithNoOpperands();
+        // parses labelValueHashMap for labels that contain no operand
+        parseLabelsWithNoOperands();
 
-        // Swaps all variable operands in fistScanList in with their value from
+        // Swaps all variable operands in machineStatesArrayList 
+        // with their repsective hex value
         replaceLabelsWithOperands_Hex();
 
-        // Swaps LinkedHashMap Mnemonic opcodes with Machine Language opcode "i.e ADD ->
-        // F000"
+        // Swaps machineStatesArrayList.mnemonic with Machine Code Values 
+        // "i.e ADD -> F000"
         replaceMnemonicsWithOpcodes();
 
-        //adds varable hex inputs (suffix) to Opcode character (prefix )
+        //adds varable hex inputs (suffix) to Machine Code Values (prefix) 
+        // "i.e PUSHI 225 -> 10E1"
         addHexOpcodesToMachineStateArrayList();
 
         // parses the file for negative hex values and convertes them to there respective
         // values "1ffffffea" -> "1fea"
         reformatNegativeHexVals();
 
-        // Converts all list values toUpper()
-        //
+        // Converts all hex values toUpperCase()
         allHexValuesToUpperCase();
 
-        // Writes LinkedHashMap out to a objectfile.txt
-        //
+        // Writes machineStatesArrayList.opcode outputfile
+        //output file name supplied in command line argument
         writeOpcodesToObjectFile();
 
-        // Prints LinkedHashMap to the screen. Determined by user args input -l
+        // Prints machineStatesArrayList to Stderr per project requiments
+        // set by command line argument [-l]
         if (isPrintToConsole){verbosePrintToStderr();}
     }
 
@@ -133,7 +135,6 @@ public class Stasm {
 
                     while (defaultTokenizer.hasMoreTokens()) {
                         String next = defaultTokenizer.nextToken();
-
                         if (next.contains(":")) {
                             label = next.replace(":", "");
                         } else if (opcodeHashMap.containsKey(next)) {
@@ -142,17 +143,20 @@ public class Stasm {
                             operand = next;
                         }
                     }
-                    //loks for EOF signal "END"
+                    
+                    // Adds EOF "END:" labels with no Operand to labelValueHashMap
                     if(!(label == null) && (label.equalsIgnoreCase("END"))) {
                         String address = String.format("%03d", counter);
                         addTolabelValueHashMap(label,operand,address);
                     }
-                    //ignores labels with no Opperand
+
+                    //Adds labels with no Operand to labelValueHashMap
                      else if( !(label == null) && (operand == null) && !(label.equalsIgnoreCase("END")) ){
                         String address = null;
                         addTolabelValueHashMap(label,operand,address);
                     }
-                    //Adds labels with Opperand to labelValueHashMap and machineStatesArrayList
+                     
+                    //Adds labels with Operand to labelValueHashMap and machineStatesArrayList
                     else if( !(label == null) && !(operand == null) && !(label.equalsIgnoreCase("END")) ){
 
                         String address = String.format("%03d", counter);
@@ -162,6 +166,7 @@ public class Stasm {
                         machineStatesArrayList.add(state);
                         counter++;
                     }
+                    
                     //ignores lines with only comments
                     else if( !(label == null) || !(mnemonic == null) || !(operand == null) ) {
                         String address = String.format("%03d", counter);
@@ -185,7 +190,7 @@ public class Stasm {
         labelValueHashMap.put(label,labelData);
     }
 
-    private static void parseLabelsWithNoOpperands() {
+    private static void parseLabelsWithNoOperands() {
         ArrayList<String> keysWithNoValues = new ArrayList<String>();
 
         for (Map.Entry<String, ArrayList> entry : labelValueHashMap.entrySet()) {
@@ -304,7 +309,7 @@ public class Stasm {
             String opcode = "";
             String mnemonic = "";
             String label = "";
-            String opperand = "";
+            String Operand = "";
 
             if(state.getAddress() != null){
                 address = state.getAddress();
@@ -323,7 +328,7 @@ public class Stasm {
                 builder.append("0000\t" + state.getLabel() + ": ");
             }
             if(state.getOperand() != null){
-                opperand = state.getOperand();
+                Operand = state.getOperand();
                 builder.append(state.getOperand() + " ");
             }
             builder.append("\n");
