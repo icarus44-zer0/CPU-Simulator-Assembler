@@ -2,6 +2,9 @@ import java.io.*;
 import java.util.*;
 
 /**
+ *  AUTHOR:
+ *      Joshua Poe
+ *      icarus44_zer0
  *
  */
 @SuppressWarnings("all")
