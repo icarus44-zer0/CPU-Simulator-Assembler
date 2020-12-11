@@ -1,27 +1,27 @@
-F: DW 0
+F: DW 10
 NOP
 HALT ;Comments Go Here
-PUSHPC 12 ;Comments Go Here
-POPPC 12 ;Comments Go Here
-LD  30 ;Comments Go Here
-ST 30 ;Comments Go Here
-DUP 50 ;Comments Go Here
-DROP K ;Comments Go Here
-OVER 2020 ;Comments Go Here
-DNEXT 202 ;Comments Go Here
+PUSHPC ;Comments Go Here
+POPPC ;Comments Go Here
+LD ;Comments Go Here
+ST ;Comments Go Here
+DUP ;Comments Go Here
+DROP ;Comments Go Here
+OVER ;Comments Go Here
+DNEXT ;Comments Go Here
 SWAP ;Comments Go Here
 PUSHI 4095 ;Comments Go Here
 PUSH 33 ;Comments Go Here
-JMP A ;Comments Go Here
+JMP END ;Comments Go Here
 JZ 33 ;Comments Go Here
-JNZ 33 ;Comments Go Here
-IN  A ;Comments Go Here
+JNZ A ;Comments Go Here
+IN  H ;Comments Go Here
 OUT 44 ;Comments Go Here
 ADD ;Comments Go Here
 SUB ;Comments Go Here
 MUL ;Comments Go Here
 DIV ;Comments Go Here
-JMP END;Comments Go Here
+JMP 22;Comments Go Here
 MOD ;Comments Go Here
 SHL ;Comments Go Here
 SHR ;Comments Go Here
@@ -47,9 +47,9 @@ NEG ;Comments Go Here
 BNOT ;Comments Go Here
 NOT ;Comments Go Here
 HALT 000 ;Comments Go Here
-PUSHPC 12 ;Comments Go Here
-POPPC 12 ;Comments Go Here
-PUSHI 22 ;Comments Go Here
+PUSHPC ;Comments Go Here
+POPPC  ;Comments Go Here
+PUSHI -222 ;Comments Go Here
 PUSHI -22 ;Comments Go Here
 PUSHI -44 ;Comments Go Here
 PUSHI -79 ;Comments Go Here

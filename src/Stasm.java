@@ -6,20 +6,9 @@ import java.util.*;
  */
 @SuppressWarnings("all")
 public class Stasm {
-    // used for storing data in standardised form
-    private static ArrayList<Instruction> instructionArrayList;
-    private static ArrayList<Opcode> opcodeArrayList;
-
     // used for printing output to the screen
     private static ArrayList<MachineState> machineStatesArrayList;
     private static ArrayList<LableState> lableStateArrayList;
-
-    // used for parsing input file to machine code
-    private static ArrayList<String> labelArrayList;
-    private static ArrayList<String> mnemonicArrayList;
-    private static ArrayList<String> operandArrayList;
-    private static ArrayList<String> operandArrayList_Hex;
-    private static ArrayList<String> outputList;
 
     // used to store known opcode values and label values
     private static HashMap<String, String> opcodeHashMap;
@@ -35,17 +24,8 @@ public class Stasm {
      * @param args
      */
     public static void main(String[] args) {
-
-        instructionArrayList = new ArrayList<Instruction>();
-        opcodeArrayList = new ArrayList<Opcode>();
         machineStatesArrayList = new ArrayList<MachineState>();
         lableStateArrayList = new ArrayList<LableState>();
-
-        labelArrayList = new ArrayList<String>();
-        mnemonicArrayList = new ArrayList<String>();
-        operandArrayList = new ArrayList<String>();
-        operandArrayList_Hex = new ArrayList<String>();
-        outputList = new ArrayList<String>();
 
         opcodeHashMap = new HashMap<String, String>();
         labelValueHashMap = new HashMap<String, String>();
@@ -54,7 +34,6 @@ public class Stasm {
         outputFileName = "";
         isPrintToConsole = false;
         counter = 0;
-
 
         // debug method allows src code to compile without
         // coomand line arguments being supplied
@@ -75,47 +54,36 @@ public class Stasm {
         parseArgs(args);
 
         // Creates HashMap of valid opCodes and their respective Machine Code
-        initOpcodeHashMap(opcodeHashMap);
+        initOpcodeHashMap();
 
         // Scans input files and parses data into an Array list fistScanList, of custom
-        // Object type CPU_Instruction
-        initInstructionArrayList(instructionArrayList,opcodeHashMap);
+        initMachineStateArrayList();
 
+        //if (isPrintToConsole){printMap();}
         // Builds HashMap of Variables listed in input file and assigns value as their
-        // address
-        initLabelValueHashMap(instructionArrayList, labelValueHashMap);
+        initLabelValueHashMap();
 
         // Swaps all variable operands in fistScanList in with their value from
-        //
-        replaceListLabelsWithLabelValues(instructionArrayList, labelValueHashMap);
-
-        // Builds ArrayList of just Mnemonic and operand
-        //
-        initOperandArrayList(instructionArrayList, mnemonicArrayList, operandArrayList);
-
-        // Converts Integers to Hex
-        //
-        operandArrayListToHex(operandArrayList, operandArrayList_Hex);
-
-        // Creates LinkedHashMap with the Mnemonic and Hex Value
-        //
-        initOpcodeArrayList(opcodeArrayList, mnemonicArrayList, operandArrayList_Hex);
+        replaceListLabelsWithLabelValues();
 
         // Swaps LinkedHashMap Mnemonic opcodes with Machine Language opcode "i.e ADD ->
         // F000"
-        replaceMnemonicsWithOpcodes(opcodeHashMap, opcodeArrayList, outputList);
+        replaceMnemonicsWithOpcodes();
+
+        //adds varable hex inputs (suffix) to Opcode character (prefix )
+        addHexValuesToOpcodes();
 
         // parses the file for negative hex values and convertes them to there respective
         // values "1ffffffea" -> "1fea"
-        formatNegativeHexVals(outputList);
+        formatNegativeHexVals();
 
         // Converts all list values toUpper()
         //
-        allValuesToUpper(outputList);
+        allValuesToUpper();
 
         // Writes LinkedHashMap out to a objectfile.txt
         //
-        writeToObjectFile(outputList);
+        writeToObjectFile();
 
         // Prints LinkedHashMap to the screen. Determined by user args input -l
         //
@@ -160,7 +128,7 @@ public class Stasm {
      * @param opcodeHashMap
      * @param fileName
      */
-    private static void initInstructionArrayList(ArrayList<Instruction> instructionArrayList, HashMap<String, String> opcodeHashMap) {
+    private static void initMachineStateArrayList() {
         try {
             File myObj = new File(inputFileName);
             Scanner sc = new Scanner(myObj);
@@ -193,9 +161,6 @@ public class Stasm {
                     }
                 }
 
-                Instruction instruction = new Instruction(label, mnemonic, operand, comment);
-                instructionArrayList.add(instruction);
-
                 String address = String.format("%03d", counter);
                 MachineState state = new MachineState(address,null,mnemonic,label,operand,DECTOHEX(operand));
                 machineStatesArrayList.add(state);
@@ -209,144 +174,87 @@ public class Stasm {
 
     }
 
+//    /**
+//     * @param instructionArrayList
+//     * @param labelValueHashMap
+//     */
+//    private static void initLabelValueHashMap() {
+//        for (MachineState state : machineStatesArrayList) {
+//            if (state.getOperand() != null && state.getOperand().equalsIgnoreCase("END")) {
+//                    int val = Integer.parseInt(state.getAddress());
+//                    labelValueHashMap.put(state.getLabel(), Integer.toString(val));
+//                    state.setHex(DECTOHEX(val));
+//                    state.setOperand((Integer.toString(val)));
+//            }
+//            if (state.getLabel() != null) {
+//                labelValueHashMap.put(state.getLabel(), state.getOperand());
+//            }
+//        }
+//    }
+
+//    /**
+//     * @param fistScanList
+//     * @param labelAddressMap
+//     */
+//    private static void replaceListLabelsWithLabelValues() {
+//        for (MachineState state : machineStatesArrayList) {
+//            String operand = state.getOperand();
+//            if (isStringOnlyAlphabet(operand)) {
+//                state.setOperand(labelValueHashMap.get(operand));
+//            }
+//        }
+//    }
+
     /**
-     * @param instructionArrayList
-     * @param labelValueHashMap
+     * @param fistScanList
+     * @param labelAddressMap
      */
-    private static void initLabelValueHashMap(ArrayList<Instruction> instructionArrayList, HashMap<String, String> labelValueHashMap) {
-        for (Instruction instruction : instructionArrayList) {
-            if(instruction.getLabel() != null && instruction.getLabel().equalsIgnoreCase("END")){
-                labelValueHashMap.put(instruction.getLabel(), Integer.toString(counter+1));
-            }else if (instruction.getLabel() != null) {
-                labelValueHashMap.put(instruction.getLabel(), instruction.getOperand());
-            }
-        }
-
+    private static void initLabelValueHashMap() {
         for (MachineState state : machineStatesArrayList) {
-            if(state.getLabel() != null && state.getLabel().equalsIgnoreCase("END")){
-                labelValueHashMap.put(state.getLabel(), Integer.toString(counter+1));
-            }else if (state.getLabel() != null) {
-                labelValueHashMap.put(state.getLabel(), state.getOperand());
+            if (state.getLabel() != null) {
+                String label = state.getLabel();
+                if(label.equalsIgnoreCase("END")){
+                    labelValueHashMap.put(label,state.getAddress());
+                }else if(state.getOperand() != null) {
+                    String opperand = state.getOperand();
+                    labelValueHashMap.put(label,opperand);
+                }else if (state.getOperand() == null) {
+                    //TODO assign next map value to label if label null
+                    labelValueHashMap.put(label,state.getAddress());
+                }
             }
         }
-
     }
 
     /**
      * @param fistScanList
      * @param labelAddressMap
      */
-    private static void replaceListLabelsWithLabelValues(ArrayList<Instruction> instructionArrayList,
-                                                         HashMap<String, String> labelValueHashMap) {
-        for (Instruction instruction : instructionArrayList) {
-            String op = instruction.getOperand();
-            if (isStringOnlyAlphabet(op)) {
-                instruction.setOperand(labelValueHashMap.get(op));
-            }
-        }
-
+    private static void replaceListLabelsWithLabelValues() {
         for (MachineState state : machineStatesArrayList) {
             String operand = state.getOperand();
             if (isStringOnlyAlphabet(operand)) {
-                state.setOperand(labelValueHashMap.get(operand));
+                state.setHex(DECTOHEX(labelValueHashMap.get(operand)));
             }
         }
     }
 
-    /**
-     * @param instructionArrayList
-     * @param mnemonicArrayList
-     * @param operandArrayList
-     */
-    private static void initOperandArrayList(ArrayList<Instruction> instructionArrayList, ArrayList<String> mnemonicArrayList,
-                                             ArrayList<String> operandArrayList) {
-
-        for (int i = 0; i < instructionArrayList.size(); i++) {
-            Instruction instruction = instructionArrayList.get(i);
-
-            String mnemonic = instruction.getMnemonic();
-            String operand = instruction.getOperand();
-
-            mnemonicArrayList.add(mnemonic);
-
-            if (operand == null) {
-                operand = "";
-            }
-            operandArrayList.add(operand);
-        }
-
-        for (int i = 0; i < machineStatesArrayList.size(); i++) {
-            MachineState state = machineStatesArrayList.get(i);
-
-            String mnemonic = state.getMnemonic();
-            String operand = state.getOperand();
-
-            mnemonicArrayList.add(mnemonic);
-
-            if (operand == null) {
-                operand = "";
-            }
-            operandArrayList.add(operand);
-        }
-    }
-
-
-    /**
-     * @param operandArrayList
-     * @param operandArrayList_Hex
-     */
-    private static void operandArrayListToHex(ArrayList<String> operandArrayList, ArrayList<String> operandArrayList_Hex) {
-        for (String temp : operandArrayList) {
-            operandArrayList_Hex.add(DECTOHEX(temp));
-        }
-    }
-
-    /**
-     * @param opcodeArrayList
-     * @param mnemonicArrayList
-     * @param operandArrayList_Hex
-     */
-    private static void initOpcodeArrayList(ArrayList<Opcode> opcodeArrayList, ArrayList<String> mnemonicArrayList,
-                                            ArrayList<String> operandArrayList_Hex) {
-        for (int i = 0; i < mnemonicArrayList.size(); i++) {
-            if (mnemonicArrayList.get(i) != null) {
-                Opcode code = new Opcode(mnemonicArrayList.get(i), operandArrayList_Hex.get(i));
-                opcodeArrayList.add(code);
-            }
-        }
-
-    }
 
     /**
      * @param opcodeHashMap
      * @param opcodeArrayList
      * @param outputList
      */
-    private static void replaceMnemonicsWithOpcodes(HashMap<String, String> opcodeHashMap, ArrayList<Opcode> opcodeArrayList, ArrayList<String> outputList) {
-
-        for (Opcode code : opcodeArrayList) {
-            String key = code.getMnemonic();
-            String val = code.getOperand();
-            String val2 = opcodeHashMap.get(key);
-
-            if (val.equals("0") || val2.length() == 4) {
-                val = val2;
-            } else if (val.length() == 1) {
-                val = val2 + "0" + "0" + val;
-            } else if (val.length() == 2) {
-                val = val2 + "0" + val;
-            } else {
-                val = val2 + val;
-            }
-            outputList.add(val);
-        }
-
+    private static void replaceMnemonicsWithOpcodes() {
         for (MachineState state : machineStatesArrayList) {
             if (state.getMnemonic() != null) {
                 String opCode = opcodeHashMap.get(state.getMnemonic());
                 state.setOpCode(opCode);
             }
         }
+    }
+
+    private static void addHexValuesToOpcodes(){
         for (MachineState state : machineStatesArrayList) {
             if (state.getOpCode() != null && state.getOpCode().length() == 1) {
                 String hex = state.getHex();
@@ -356,22 +264,11 @@ public class Stasm {
             }
         }
     }
-
     /**
      * used to fix negative Hex Vals
      * @param outputList
      */
-    private static void formatNegativeHexVals(ArrayList<String> outputList) {
-        for (String elem : outputList){
-            if(elem.length() > 4) {
-                String first = elem.substring(0, 1);
-                String lastThree = elem.substring(elem.length()-3);
-                if (first.length() + lastThree.length() == 4) {
-                    outputList.set(outputList.indexOf(elem), first + lastThree);
-                }
-            }
-        }
-
+    private static void formatNegativeHexVals() {
         for (MachineState state : machineStatesArrayList){
             if(state.getOpCode() != null && state.getOpCode().length() > 4) {
                 String opCode = state.getOpCode();
@@ -384,9 +281,12 @@ public class Stasm {
         }
     }
 
-    private static void allValuesToUpper(ArrayList<String> outputList) {
-        for (String elem : outputList) {
-            outputList.set(outputList.indexOf(elem), elem.toUpperCase());
+    private static void allValuesToUpper() {
+        for (MachineState state : machineStatesArrayList) {
+            if(state.getOpCode() != null) {
+                String opCode = state.getOpCode();
+                state.setOpCode(opCode.toUpperCase());
+            }
         }
     }
 
@@ -395,14 +295,13 @@ public class Stasm {
      *
      * @param list
      */
-    private static void writeToObjectFile(ArrayList<String> outputList) {
-
+    private static void writeToObjectFile() {
         try {
             FileWriter myWriter = new FileWriter(outputFileName);
             myWriter.write("v2.0 raw");
 
-            for (String item : outputList) {
-                myWriter.write("\n" +item);
+            for (MachineState state : machineStatesArrayList) {
+                myWriter.write("\n" +state.getOpCode());
             }
             myWriter.close();
         } catch (IOException e) {
@@ -426,7 +325,7 @@ public class Stasm {
      *
      * @param opcodeHashMap
      */
-    private static void initOpcodeHashMap(HashMap<String, String> opcodeHashMap) {
+    private static void initOpcodeHashMap() {
         opcodeHashMap.put("NOP", "0000");
         opcodeHashMap.put("HALT", "0F00");
         opcodeHashMap.put("PUSHPC", "0100");
@@ -514,74 +413,6 @@ public class Stasm {
         public static boolean isStringOnlyAlphabet(String str) {
 
             return ((str != null) && (str.matches("^[a-zA-Z]*$")));
-        }
-    }
-
-    /**
-     *
-     */
-    class Instruction {
-        private String label;
-        private String mnemonic;
-        private String operand;
-        private String comment;
-
-        public Instruction(String label, String mnemonic, String operand, String comment) {
-            this.label = label;
-            this.mnemonic = mnemonic;
-            this.operand = operand;
-            this.comment = comment;
-        }
-
-        public String getLabel() { return label;    }
-
-        public void setLabel(String label) {this.label = label;}
-
-        public String getMnemonic() {return mnemonic;}
-
-        public void setMnemonic(String mnemonic) {this.mnemonic = mnemonic;}
-
-        public String getOperand() {return operand;}
-
-        public void setOperand(String operand) {this.operand = operand;}
-
-        public String getComment() {return comment;}
-
-        public void setComment(String comment) {this.comment = comment;}
-
-        @Override
-        public String toString() {
-            System.err.println(this.label + " " + this.mnemonic + " " + this.operand + " " + this.comment);
-            return null;
-        }
-    }
-
-
-    /**
-     *
-     */
-    class Opcode {
-        private String mnemonic;
-        private String operand;
-
-
-        public Opcode(String mnemonic, String operand) {
-            this.mnemonic = mnemonic;
-            this.operand = operand;
-        }
-
-        public String getMnemonic() {return mnemonic;}
-
-        public void setMnemonic(String mnemonic) {this.mnemonic = mnemonic;}
-
-        public String getOperand() {return operand;}
-
-        public void setOperand(String operand) {this.operand = operand;}
-
-        @Override
-        public String toString() {
-            System.err.println(this.mnemonic + " " + this.operand);
-            return null;
         }
     }
 
